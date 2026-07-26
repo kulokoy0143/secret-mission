@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
+import '../training/training_screen.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
 
   @override
-  State<CommandCenterScreen> createState() =>
-      _CommandCenterScreenState();
+  State<CommandCenterScreen> createState() => _CommandCenterScreenState();
 }
 
 class _CommandCenterScreenState extends State<CommandCenterScreen> {
@@ -28,7 +28,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           index: _selectedIndex,
           children: [
             _buildDashboard(),
-            _buildPlaceholder('Training'),
+            const TrainingScreen(),
             _buildPlaceholder('Progress'),
             _buildPlaceholder('Commander AI'),
             _buildPlaceholder('Agent File'),
@@ -114,9 +114,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                   color: AppColors.surface,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.notifications_none_rounded,
-                ),
+                child: const Icon(Icons.notifications_none_rounded),
               ),
             ],
           ),
@@ -125,11 +123,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
           const Row(
             children: [
-              Icon(
-                Icons.circle,
-                color: AppColors.success,
-                size: 9,
-              ),
+              Icon(Icons.circle, color: AppColors.success, size: 9),
               SizedBox(width: 8),
               Text(
                 'MISSION STATUS: READY',
@@ -185,10 +179,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF7C4DFF),
-            Color(0xFF5E35B1),
-          ],
+          colors: [Color(0xFF7C4DFF), Color(0xFF5E35B1)],
         ),
         borderRadius: BorderRadius.circular(24),
       ),
@@ -207,10 +198,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           const SizedBox(height: 12),
           const Text(
             'Push Day',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-            ),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           const Text(
@@ -257,26 +245,15 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
         children: [
           Icon(icon, color: AppColors.primary),
           const SizedBox(height: 18),
-          Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text(title, style: const TextStyle(color: AppColors.textSecondary)),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-            ),
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
           ),
           Text(
             subtitle,
-            style: const TextStyle(
-              color: AppColors.success,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: AppColors.success, fontSize: 12),
           ),
         ],
       ),
@@ -315,10 +292,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 SizedBox(height: 8),
                 Text(
                   'Your recovery looks excellent. You are ready for a strong Push Day session.',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    height: 1.5,
-                  ),
+                  style: TextStyle(color: AppColors.textSecondary, height: 1.5),
                 ),
               ],
             ),
