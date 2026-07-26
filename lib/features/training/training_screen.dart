@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
 
@@ -17,10 +19,28 @@ class _TrainingScreenState extends State<TrainingScreen> {
     text: '10',
   );
 
+  final List<CompletedSet> _completedSets = [];
+
   bool _usesKilograms = false;
+
+  Timer? _restTimer;
+  int _restSeconds = 90;
+  int _remainingSeconds = 90;
+  bool _isResting = false;
+  bool _isTimerPaused = false;
+
+  int get _currentSetNumber => _completedSets.length + 1;
+
+  double get _totalVolume {
+    return _completedSets.fold(
+      0,
+      (total, set) => total + (set.weight * set.reps),
+    );
+  }
 
   @override
   void dispose() {
+    _restTimer?.cancel();
     _weightController.dispose();
     _repsController.dispose();
     super.dispose();
@@ -40,13 +60,120 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 
   void _saveSet() {
-    final weight = _weightController.text.trim();
-    final reps = _repsController.text.trim();
-    final unit = _usesKilograms ? 'kg' : 'lb';
+    final weight = double.tryParse(_weightController.text.trim());
+    final reps = int.tryParse(_repsController.text.trim());
+
+    if (weight == null || weight <= 0 || reps == null || reps <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter a valid weight and number of reps.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _completedSets.add(
+        CompletedSet(
+          setNumber: _currentSetNumber,
+          weight: weight,
+          reps: reps,
+          unit: _usesKilograms ? 'kg' : 'lb',
+        ),
+      );
+    });
+
+    FocusScope.of(context).unfocus();
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Set saved: $weight $unit × $reps reps')),
+      SnackBar(
+        content: Text(
+          'Set saved: ${_formatNumber(weight)} '
+          '${_usesKilograms ? 'kg' : 'lb'} × $reps reps',
+        ),
+      ),
     );
+
+    _startRestTimer();
+  }
+
+  void _startRestTimer() {
+    _restTimer?.cancel();
+
+    setState(() {
+      _remainingSeconds = _restSeconds;
+      _isResting = true;
+      _isTimerPaused = false;
+    });
+
+    _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isTimerPaused) return;
+
+      if (_remainingSeconds <= 1) {
+        timer.cancel();
+
+        if (!mounted) return;
+
+        setState(() {
+          _remainingSeconds = 0;
+          _isResting = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rest complete. Begin your next set.')),
+        );
+      } else {
+        setState(() {
+          _remainingSeconds--;
+        });
+      }
+    });
+  }
+
+  void _toggleTimerPause() {
+    setState(() {
+      _isTimerPaused = !_isTimerPaused;
+    });
+  }
+
+  void _changeRestTime(int seconds) {
+    setState(() {
+      _remainingSeconds = (_remainingSeconds + seconds).clamp(0, 600);
+
+      _restSeconds = (_restSeconds + seconds).clamp(15, 600);
+    });
+  }
+
+  void _skipRest() {
+    _restTimer?.cancel();
+
+    setState(() {
+      _remainingSeconds = 0;
+      _isResting = false;
+      _isTimerPaused = false;
+    });
+  }
+
+  void _deleteSet(int index) {
+    setState(() {
+      _completedSets.removeAt(index);
+    });
+  }
+
+  String _formatNumber(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toStringAsFixed(0);
+    }
+
+    return value.toStringAsFixed(1);
+  }
+
+  String _formatTime(int totalSeconds) {
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+
+    return '${minutes.toString().padLeft(2, '0')}:'
+        '${seconds.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -78,17 +205,21 @@ class _TrainingScreenState extends State<TrainingScreen> {
           const SizedBox(height: 28),
 
           _buildExerciseHeader(),
-
           const SizedBox(height: 16),
 
           _buildPreviousPerformance(),
-
           const SizedBox(height: 16),
 
           _buildSetLogger(),
 
-          const SizedBox(height: 16),
+          if (_completedSets.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _buildSetHistory(),
+          ],
 
+          if (_isResting) ...[const SizedBox(height: 16), _buildRestTimer()],
+
+          const SizedBox(height: 16),
           _buildExerciseGuideButton(),
         ],
       ),
@@ -179,22 +310,20 @@ class _TrainingScreenState extends State<TrainingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'SET 1',
-            style: TextStyle(
+          Text(
+            'SET $_currentSetNumber',
+            style: const TextStyle(
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.4,
             ),
           ),
           const SizedBox(height: 18),
-
           const Text(
             'Weight',
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 8),
-
           Row(
             children: [
               Expanded(
@@ -222,12 +351,9 @@ class _TrainingScreenState extends State<TrainingScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 18),
-
           const Text('Reps', style: TextStyle(color: AppColors.textSecondary)),
           const SizedBox(height: 8),
-
           TextField(
             controller: _repsController,
             keyboardType: TextInputType.number,
@@ -241,9 +367,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 20),
-
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
@@ -266,6 +390,148 @@ class _TrainingScreenState extends State<TrainingScreen> {
     );
   }
 
+  Widget _buildSetHistory() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'COMPLETED SETS',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.3,
+                  ),
+                ),
+              ),
+              Text(
+                'Volume: ${_formatNumber(_totalVolume)}',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...List.generate(_completedSets.length, (index) {
+            final set = _completedSets[index];
+
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                backgroundColor: AppColors.primary.withValues(alpha: 0.18),
+                child: Text(
+                  '${set.setNumber}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              title: Text(
+                '${_formatNumber(set.weight)} ${set.unit} × '
+                '${set.reps} reps',
+              ),
+              subtitle: Text(
+                'Volume: ${_formatNumber(set.weight * set.reps)} '
+                '${set.unit}',
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+              trailing: IconButton(
+                onPressed: () => _deleteSet(index),
+                tooltip: 'Delete set',
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRestTimer() {
+    final progress = _restSeconds == 0
+        ? 0.0
+        : (_remainingSeconds / _restSeconds).clamp(0.0, 1.0);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'REST TIMER',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            _formatTime(_remainingSeconds),
+            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 14),
+          LinearProgressIndicator(
+            value: progress,
+            minHeight: 8,
+            borderRadius: BorderRadius.circular(20),
+            backgroundColor: AppColors.background,
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _changeRestTime(-15),
+                  child: const Text('-15 SEC'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                onPressed: _toggleTimerPause,
+                tooltip: _isTimerPaused ? 'Resume' : 'Pause',
+                icon: Icon(
+                  _isTimerPaused
+                      ? Icons.play_arrow_rounded
+                      : Icons.pause_rounded,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _changeRestTime(15),
+                  child: const Text('+15 SEC'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TextButton(onPressed: _skipRest, child: const Text('SKIP REST')),
+        ],
+      ),
+    );
+  }
+
   Widget _buildExerciseGuideButton() {
     return SizedBox(
       width: double.infinity,
@@ -283,4 +549,18 @@ class _TrainingScreenState extends State<TrainingScreen> {
       ),
     );
   }
+}
+
+class CompletedSet {
+  const CompletedSet({
+    required this.setNumber,
+    required this.weight,
+    required this.reps,
+    required this.unit,
+  });
+
+  final int setNumber;
+  final double weight;
+  final int reps;
+  final String unit;
 }
