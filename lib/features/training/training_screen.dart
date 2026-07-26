@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
+import 'exercise_guide_screen.dart';
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
@@ -537,8 +538,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Exercise Academy coming next.')),
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ExerciseGuideScreen()),
           );
         },
         icon: const Icon(Icons.menu_book_rounded),
