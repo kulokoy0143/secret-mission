@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
+import '../../../app/app_theme.dart';
 import 'exercise_guide_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../models/workout_set.dart';
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
