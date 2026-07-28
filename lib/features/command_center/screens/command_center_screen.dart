@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:secret_mission/app/app_theme.dart';
 import 'package:secret_mission/features/training/screens/training_screen.dart';
 import 'package:secret_mission/features/history/screens/workout_history_screen.dart';
+import 'package:secret_mission/features/training/screens/workout_picker_screen.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
@@ -12,6 +13,20 @@ class CommandCenterScreen extends StatefulWidget {
 
 class _CommandCenterScreenState extends State<CommandCenterScreen> {
   int _selectedIndex = 0;
+
+  void _openWorkoutPicker() {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => WorkoutPickerScreen(
+        onWorkoutStarted: () {
+          setState(() {
+            _selectedIndex = 1;
+          });
+        },
+      ),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -200,11 +215,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
-            onPressed: () {
-              setState(() {
-                _selectedIndex = 1;
-              });
-            },
+            onPressed: _openWorkoutPicker,
             style: FilledButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: AppColors.primary,

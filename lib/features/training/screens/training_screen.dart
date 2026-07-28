@@ -87,6 +87,16 @@ class _TrainingScreenState extends State<TrainingScreen> {
       );
       return;
     }
+final activeWorkout = SessionManager.activeWorkout;
+
+if (activeWorkout == null) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Start a workout before saving a set.'),
+    ),
+  );
+  return;
+}
 
     final unit = _usesKilograms ? 'kg' : 'lb';
 
@@ -97,7 +107,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
   reps: reps,
   unit: unit,
   completedAt: DateTime.now(),
-  sessionId: SessionManager.currentSessionId,
+sessionId: activeWorkout.sessionId,
 );
 
     await WorkoutStorageService.saveSet(workoutSet);
@@ -198,6 +208,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final activeWorkout = SessionManager.activeWorkout;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       child: Column(
@@ -213,15 +224,22 @@ class _TrainingScreenState extends State<TrainingScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Push Day',
-            style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
-          ),
+Text(
+  activeWorkout?.name ?? 'No Active Workout',
+  style: const TextStyle(
+    fontSize: 30,
+    fontWeight: FontWeight.w800,
+  ),
+),
           const SizedBox(height: 6),
-          const Text(
-            'Chest • Shoulders • Triceps',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
+Text(
+  activeWorkout != null
+      ? 'Workout in Progress'
+      : 'Press START WORKOUT to begin',
+  style: const TextStyle(
+    color: AppColors.textSecondary,
+  ),
+),
           const SizedBox(height: 28),
 
           _buildExerciseHeader(),

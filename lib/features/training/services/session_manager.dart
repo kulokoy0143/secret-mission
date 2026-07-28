@@ -1,40 +1,90 @@
 import 'package:flutter/foundation.dart';
+import 'package:secret_mission/features/training/models/active_workout.dart';
 
 class SessionManager {
   SessionManager._();
 
-  static String? _currentSessionId;
+  static ActiveWorkout? _activeWorkout;
 
-  static DateTime? _workoutStartedAt;
+  static ActiveWorkout? get activeWorkout => _activeWorkout;
 
-  /// Returns the active workout session ID.
-  static String get currentSessionId {
-    if (_currentSessionId == null) {
-      startWorkout();
+  static bool get isWorkoutActive => _activeWorkout != null;
+
+  static String? get currentSessionId => _activeWorkout?.sessionId;
+
+  static DateTime? get workoutStartedAt => _activeWorkout?.startedAt;
+
+  static void startWorkout({
+    required WorkoutType type,
+    String? customName,
+  }) {
+    if (_activeWorkout != null) {
+      debugPrint(
+        'Workout already active: ${_activeWorkout!.sessionId}',
+      );
+      return;
     }
 
-    return _currentSessionId!;
+    final now = DateTime.now();
+
+    final workoutName = type == WorkoutType.custom
+        ? _resolveCustomName(customName)
+        : type.displayName;
+
+    _activeWorkout = ActiveWorkout(
+      sessionId: now.microsecondsSinceEpoch.toString(),
+      name: workoutName,
+      type: type,
+      startedAt: now,
+    );
+
+    debugPrint(
+      'Workout started: '
+      '${_activeWorkout!.name} '
+      '(${_activeWorkout!.sessionId})',
+    );
   }
 
-  /// Starts a brand-new workout session.
-  static void startWorkout() {
-    _currentSessionId = DateTime.now().millisecondsSinceEpoch.toString();
-    _workoutStartedAt = DateTime.now();
+  static ActiveWorkout? finishWorkout() {
+    final finishedWorkout = _activeWorkout;
 
-    debugPrint('Workout Started: $_currentSessionId');
+    if (finishedWorkout == null) {
+      debugPrint('No active workout to finish.');
+      return null;
+    }
+
+    debugPrint(
+      'Workout finished: '
+      '${finishedWorkout.name} '
+      '(${finishedWorkout.sessionId})',
+    );
+
+    _activeWorkout = null;
+
+    return finishedWorkout;
   }
 
-  /// Ends the current workout.
-  static void endWorkout() {
-    debugPrint('Workout Ended: $_currentSessionId');
+  static void cancelWorkout() {
+    if (_activeWorkout == null) {
+      return;
+    }
 
-    _currentSessionId = null;
-    _workoutStartedAt = null;
+    debugPrint(
+      'Workout cancelled: '
+      '${_activeWorkout!.name} '
+      '(${_activeWorkout!.sessionId})',
+    );
+
+    _activeWorkout = null;
   }
 
-  /// Whether a workout is currently active.
-  static bool get isWorkoutActive => _currentSessionId != null;
+  static String _resolveCustomName(String? customName) {
+    final cleanedName = customName?.trim();
 
-  /// When the workout started.
-  static DateTime? get workoutStartedAt => _workoutStartedAt;
+    if (cleanedName == null || cleanedName.isEmpty) {
+      return WorkoutType.custom.displayName;
+    }
+
+    return cleanedName;
+  }
 }
