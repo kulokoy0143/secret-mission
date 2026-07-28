@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:secret_mission/app/app_theme.dart';
 import 'package:secret_mission/features/training/screens/training_screen.dart';
+import 'package:secret_mission/features/history/screens/workout_history_screen.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
@@ -19,12 +20,12 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
         child: IndexedStack(
           index: _selectedIndex,
           children: [
-            _buildDashboard(),
-            const TrainingScreen(),
-            _buildPlaceholder('Progress'),
-            _buildPlaceholder('Commander AI'),
-            _buildPlaceholder('Agent File'),
-          ],
+  _buildDashboard(),
+  const TrainingScreen(),
+  const WorkoutHistoryScreen(),
+  _buildPlaceholder('Commander AI'),
+  _buildPlaceholder('Agent File'),
+],
         ),
       ),
       bottomNavigationBar: NavigationBar(
@@ -50,7 +51,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart_rounded),
-            label: 'Progress',
+            label: 'History',
           ),
           NavigationDestination(
             icon: Icon(Icons.smart_toy_outlined),

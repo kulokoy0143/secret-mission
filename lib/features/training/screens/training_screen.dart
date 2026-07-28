@@ -5,6 +5,7 @@ import 'package:secret_mission/app/app_theme.dart';
 import 'package:secret_mission/features/training/screens/exercise_guide_screen.dart';
 import 'package:secret_mission/features/training/models/workout_set.dart';
 import 'package:secret_mission/features/training/services/workout_storage_service.dart';
+import 'package:secret_mission/features/training/services/session_manager.dart';
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
@@ -89,14 +90,15 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
     final unit = _usesKilograms ? 'kg' : 'lb';
 
-    final workoutSet = WorkoutSet(
-      exerciseName: 'Incline Bench Press',
-      setNumber: _currentSetNumber,
-      weight: weight,
-      reps: reps,
-      unit: unit,
-      completedAt: DateTime.now(),
-    );
+  final workoutSet = WorkoutSet(
+  exerciseName: 'Incline Bench Press',
+  setNumber: _currentSetNumber,
+  weight: weight,
+  reps: reps,
+  unit: unit,
+  completedAt: DateTime.now(),
+  sessionId: SessionManager.currentSessionId,
+);
 
     await WorkoutStorageService.saveSet(workoutSet);
 
@@ -238,7 +240,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
           if (_isResting) ...[const SizedBox(height: 16), _buildRestTimer()],
 
           const SizedBox(height: 16),
-          _buildExerciseGuideButton(),
+_buildExerciseGuideButton(),
+
         ],
       ),
     );
