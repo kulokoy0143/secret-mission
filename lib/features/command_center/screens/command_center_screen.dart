@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
-import '../training/training_screen.dart';
+import 'package:secret_mission/app/app_theme.dart';
+import 'package:secret_mission/features/training/screens/training_screen.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
@@ -11,14 +11,6 @@ class CommandCenterScreen extends StatefulWidget {
 
 class _CommandCenterScreenState extends State<CommandCenterScreen> {
   int _selectedIndex = 0;
-
-  final List<String> _pageTitles = const [
-    'Command Center',
-    'Training',
-    'Progress',
-    'Commander',
-    'Agent File',
-  ];
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../features/welcome/welcome_screen.dart';
-import 'app_theme.dart';
+import 'package:secret_mission/app/app_theme.dart';
+import 'package:secret_mission/features/welcome/screens/welcome_screen.dart';
 
 class SecretMissionApp extends StatelessWidget {
   const SecretMissionApp({super.key});

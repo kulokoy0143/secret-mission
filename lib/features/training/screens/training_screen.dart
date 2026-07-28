@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../../app/app_theme.dart';
-import 'exercise_guide_screen.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import '../models/workout_set.dart';
+import 'package:secret_mission/app/app_theme.dart';
+import 'package:secret_mission/features/training/screens/exercise_guide_screen.dart';
+import 'package:secret_mission/features/training/models/workout_set.dart';
+import 'package:secret_mission/features/training/services/workout_storage_service.dart';
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
@@ -22,7 +22,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
     text: '10',
   );
 
-  final List<CompletedSet> _completedSets = [];
+  List<WorkoutSet> _completedSets = [];
 
   bool _usesKilograms = false;
 
@@ -39,6 +39,18 @@ class _TrainingScreenState extends State<TrainingScreen> {
       0,
       (total, set) => total + (set.weight * set.reps),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWorkoutHistory();
+  }
+
+  void _loadWorkoutHistory() {
+    setState(() {
+      _completedSets = WorkoutStorageService.getAllSets();
+    });
   }
 
   @override
@@ -62,7 +74,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
     });
   }
 
-  void _saveSet() {
+  Future<void> _saveSet() async {
     final weight = double.tryParse(_weightController.text.trim());
     final reps = int.tryParse(_repsController.text.trim());
 
@@ -75,25 +87,28 @@ class _TrainingScreenState extends State<TrainingScreen> {
       return;
     }
 
-    setState(() {
-      _completedSets.add(
-        CompletedSet(
-          setNumber: _currentSetNumber,
-          weight: weight,
-          reps: reps,
-          unit: _usesKilograms ? 'kg' : 'lb',
-        ),
-      );
-    });
+    final unit = _usesKilograms ? 'kg' : 'lb';
+
+    final workoutSet = WorkoutSet(
+      exerciseName: 'Incline Bench Press',
+      setNumber: _currentSetNumber,
+      weight: weight,
+      reps: reps,
+      unit: unit,
+      completedAt: DateTime.now(),
+    );
+
+    await WorkoutStorageService.saveSet(workoutSet);
+
+    if (!mounted) return;
+
+    _loadWorkoutHistory();
 
     FocusScope.of(context).unfocus();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Set saved: ${_formatNumber(weight)} '
-          '${_usesKilograms ? 'kg' : 'lb'} × $reps reps',
-        ),
+        content: Text('Set saved: ${_formatNumber(weight)} $unit × $reps reps'),
       ),
     );
 
@@ -157,10 +172,10 @@ class _TrainingScreenState extends State<TrainingScreen> {
     });
   }
 
-  void _deleteSet(int index) {
-    setState(() {
-      _completedSets.removeAt(index);
-    });
+  Future<void> _deleteSet(int index) async {
+    await WorkoutStorageService.deleteSet(_completedSets[index]);
+
+    _loadWorkoutHistory();
   }
 
   String _formatNumber(double value) {
@@ -552,18 +567,4 @@ class _TrainingScreenState extends State<TrainingScreen> {
       ),
     );
   }
-}
-
-class CompletedSet {
-  const CompletedSet({
-    required this.setNumber,
-    required this.weight,
-    required this.reps,
-    required this.unit,
-  });
-
-  final int setNumber;
-  final double weight;
-  final int reps;
-  final String unit;
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
+import 'package:secret_mission/app/app_theme.dart';
 
 class ExerciseGuideScreen extends StatelessWidget {
   const ExerciseGuideScreen({super.key});
