@@ -15,18 +15,18 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   int _selectedIndex = 0;
 
   void _openWorkoutPicker() {
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => WorkoutPickerScreen(
-        onWorkoutStarted: () {
-          setState(() {
-            _selectedIndex = 1;
-          });
-        },
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => WorkoutPickerScreen(
+          onWorkoutStarted: () {
+            setState(() {
+              _selectedIndex = 1;
+            });
+          },
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,12 +35,18 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
         child: IndexedStack(
           index: _selectedIndex,
           children: [
-  _buildDashboard(),
-  const TrainingScreen(),
-  const WorkoutHistoryScreen(),
-  _buildPlaceholder('Commander AI'),
-  _buildPlaceholder('Agent File'),
-],
+            _buildDashboard(),
+            TrainingScreen(
+              onWorkoutFinished: () {
+                setState(() {
+                  _selectedIndex = 0;
+                });
+              },
+            ),
+            const WorkoutHistoryScreen(),
+            _buildPlaceholder('Commander AI'),
+            _buildPlaceholder('Agent File'),
+          ],
         ),
       ),
       bottomNavigationBar: NavigationBar(

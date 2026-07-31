@@ -8,7 +8,9 @@ import 'package:secret_mission/features/training/services/workout_storage_servic
 import 'package:secret_mission/features/training/services/session_manager.dart';
 
 class TrainingScreen extends StatefulWidget {
-  const TrainingScreen({super.key});
+  const TrainingScreen({super.key, required this.onWorkoutFinished});
+
+  final VoidCallback onWorkoutFinished;
 
   @override
   State<TrainingScreen> createState() => _TrainingScreenState();
@@ -87,28 +89,26 @@ class _TrainingScreenState extends State<TrainingScreen> {
       );
       return;
     }
-final activeWorkout = SessionManager.activeWorkout;
+    final activeWorkout = SessionManager.activeWorkout;
 
-if (activeWorkout == null) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('Start a workout before saving a set.'),
-    ),
-  );
-  return;
-}
+    if (activeWorkout == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Start a workout before saving a set.')),
+      );
+      return;
+    }
 
     final unit = _usesKilograms ? 'kg' : 'lb';
 
-  final workoutSet = WorkoutSet(
-  exerciseName: 'Incline Bench Press',
-  setNumber: _currentSetNumber,
-  weight: weight,
-  reps: reps,
-  unit: unit,
-  completedAt: DateTime.now(),
-sessionId: activeWorkout.sessionId,
-);
+    final workoutSet = WorkoutSet(
+      exerciseName: 'Incline Bench Press',
+      setNumber: _currentSetNumber,
+      weight: weight,
+      reps: reps,
+      unit: unit,
+      completedAt: DateTime.now(),
+      sessionId: activeWorkout.sessionId,
+    );
 
     await WorkoutStorageService.saveSet(workoutSet);
 
@@ -206,6 +206,36 @@ sessionId: activeWorkout.sessionId,
         '${seconds.toString().padLeft(2, '0')}';
   }
 
+  void _finishWorkout() {
+    final finishedWorkout = SessionManager.finishWorkout();
+
+    if (finishedWorkout == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('There is no active workout to finish.')),
+      );
+      return;
+    }
+
+    _restTimer?.cancel();
+
+    setState(() {
+      _isResting = false;
+      _isTimerPaused = false;
+      _remainingSeconds = _restSeconds;
+      _completedSets = [];
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${finishedWorkout.name} completed. Mission accomplished!',
+        ),
+      ),
+    );
+
+    widget.onWorkoutFinished();
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeWorkout = SessionManager.activeWorkout;
@@ -224,22 +254,17 @@ sessionId: activeWorkout.sessionId,
             ),
           ),
           const SizedBox(height: 6),
-Text(
-  activeWorkout?.name ?? 'No Active Workout',
-  style: const TextStyle(
-    fontSize: 30,
-    fontWeight: FontWeight.w800,
-  ),
-),
+          Text(
+            activeWorkout?.name ?? 'No Active Workout',
+            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 6),
-Text(
-  activeWorkout != null
-      ? 'Workout in Progress'
-      : 'Press START WORKOUT to begin',
-  style: const TextStyle(
-    color: AppColors.textSecondary,
-  ),
-),
+          Text(
+            activeWorkout != null
+                ? 'Workout in Progress'
+                : 'Press START WORKOUT to begin',
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 28),
 
           _buildExerciseHeader(),
@@ -258,8 +283,10 @@ Text(
           if (_isResting) ...[const SizedBox(height: 16), _buildRestTimer()],
 
           const SizedBox(height: 16),
-_buildExerciseGuideButton(),
+          _buildMissionControl(),
 
+          const SizedBox(height: 16),
+          _buildExerciseGuideButton(),
         ],
       ),
     );
@@ -566,6 +593,105 @@ _buildExerciseGuideButton(),
           ),
           const SizedBox(height: 10),
           TextButton(onPressed: _skipRest, child: const Text('SKIP REST')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMissionControl() {
+    final activeWorkout = SessionManager.activeWorkout;
+    final unit = _usesKilograms ? 'kg' : 'lb';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'MISSION CONTROL',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _buildMissionStat(
+                  icon: Icons.format_list_numbered_rounded,
+                  label: 'Sets',
+                  value: '${_completedSets.length}',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildMissionStat(
+                  icon: Icons.fitness_center_rounded,
+                  label: 'Volume',
+                  value: '${_formatNumber(_totalVolume)} $unit',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: activeWorkout == null ? null : _finishWorkout,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              icon: const Icon(Icons.flag_rounded),
+              label: const Text(
+                'FINISH MISSION',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMissionStat({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
