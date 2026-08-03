@@ -6,6 +6,7 @@ import 'package:secret_mission/features/training/screens/exercise_guide_screen.d
 import 'package:secret_mission/features/training/models/workout_set.dart';
 import 'package:secret_mission/features/training/services/workout_storage_service.dart';
 import 'package:secret_mission/features/training/services/session_manager.dart';
+import 'package:secret_mission/features/training/data/workout_plans.dart';
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key, required this.onWorkoutFinished});
@@ -36,6 +37,29 @@ class _TrainingScreenState extends State<TrainingScreen> {
   bool _isTimerPaused = false;
 
   int get _currentSetNumber => _completedSets.length + 1;
+  int _currentExerciseIndex = 0;
+
+WorkoutPlan? get _currentPlan {
+  final activeWorkout = SessionManager.activeWorkout;
+
+  if (activeWorkout == null) return null;
+
+  return WorkoutPlans.forType(activeWorkout.type);
+}
+
+String get _currentExerciseName {
+  final plan = _currentPlan;
+
+  if (plan == null || plan.exercises.isEmpty) {
+    return 'No Exercise';
+  }
+
+  return plan.exercises[_currentExerciseIndex];
+}
+
+int get _totalExercises {
+  return _currentPlan?.exercises.length ?? 0;
+}
 
   double get _totalVolume {
     return _completedSets.fold(
@@ -101,7 +125,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
     final unit = _usesKilograms ? 'kg' : 'lb';
 
     final workoutSet = WorkoutSet(
-      exerciseName: 'Incline Bench Press',
+      exerciseName: _currentExerciseName,
       setNumber: _currentSetNumber,
       weight: weight,
       reps: reps,
@@ -215,7 +239,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
       );
       return;
     }
-
     _restTimer?.cancel();
 
     setState(() {
@@ -223,6 +246,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
       _isTimerPaused = false;
       _remainingSeconds = _restSeconds;
       _completedSets = [];
+        _currentExerciseIndex = 0;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -235,6 +259,32 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
     widget.onWorkoutFinished();
   }
+
+void _nextExercise() {
+  final plan = _currentPlan;
+
+  if (plan == null) return;
+
+  if (_currentExerciseIndex >= plan.exercises.length - 1) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'You have reached the final exercise. Finish the mission when ready.',
+        ),
+      ),
+    );
+    return;
+  }
+
+  setState(() {
+    _currentExerciseIndex++;
+
+    _completedSets.clear();
+
+    _weightController.text = '40';
+    _repsController.text = '10';
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -280,13 +330,27 @@ class _TrainingScreenState extends State<TrainingScreen> {
             _buildSetHistory(),
           ],
 
-          if (_isResting) ...[const SizedBox(height: 16), _buildRestTimer()],
+          if (_isResting) ...[
+  const SizedBox(height: 16),
+  _buildRestTimer(),
+],
 
-          const SizedBox(height: 16),
-          _buildMissionControl(),
+const SizedBox(height: 16),
 
-          const SizedBox(height: 16),
-          _buildExerciseGuideButton(),
+SizedBox(
+  width: double.infinity,
+  child: FilledButton.icon(
+    onPressed: _nextExercise,
+    icon: const Icon(Icons.skip_next_rounded),
+    label: const Text('NEXT EXERCISE'),
+  ),
+),
+
+const SizedBox(height: 16),
+_buildMissionControl(),
+
+const SizedBox(height: 16),
+_buildExerciseGuideButton(),
         ],
       ),
     );
@@ -301,7 +365,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
-      child: const Row(
+      child: Row(
         children: [
           CircleAvatar(
             radius: 24,
@@ -314,12 +378,12 @@ class _TrainingScreenState extends State<TrainingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Incline Bench Press',
+  _currentExerciseName,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Exercise 1 of 5',
+                  'Exercise ${_currentExerciseIndex + 1} of $_totalExercises',
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
               ],
