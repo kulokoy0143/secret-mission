@@ -901,7 +901,11 @@ class _TrainingScreenState extends State<TrainingScreen> {
       child: OutlinedButton.icon(
         onPressed: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ExerciseGuideScreen()),
+            MaterialPageRoute(
+  builder: (_) => ExerciseGuideScreen(
+    exerciseName: _currentExerciseName,
+  ),
+),
           );
         },
         icon: const Icon(Icons.menu_book_rounded),
