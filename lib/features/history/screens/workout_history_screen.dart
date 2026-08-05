@@ -55,18 +55,12 @@ class WorkoutHistoryScreen extends StatelessWidget {
         SizedBox(height: 6),
         Text(
           'Workout History',
-          style: TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
-          ),
+          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
         ),
         SizedBox(height: 6),
         Text(
           'Review your completed training missions.',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            height: 1.4,
-          ),
+          style: TextStyle(color: AppColors.textSecondary, height: 1.4),
         ),
       ],
     );
@@ -81,9 +75,7 @@ class WorkoutHistoryScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,10 +139,7 @@ class WorkoutHistoryScreen extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _buildStat(
-                  label: 'Sets',
-                  value: '${session.totalSets}',
-                ),
+                child: _buildStat(label: 'Sets', value: '${session.totalSets}'),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -162,10 +151,7 @@ class WorkoutHistoryScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          const Divider(
-            height: 1,
-            color: AppColors.background,
-          ),
+          const Divider(height: 1, color: AppColors.background),
           const SizedBox(height: 16),
           ...exercises.entries.map(
             (entry) => Padding(
@@ -181,15 +167,9 @@ class WorkoutHistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStat({
-    required String label,
-    required String value,
-  }) {
+  Widget _buildStat({required String label, required String value}) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(14),
@@ -200,10 +180,7 @@ class WorkoutHistoryScreen extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-            ),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 4),
           Text(
@@ -227,10 +204,7 @@ class WorkoutHistoryScreen extends StatelessWidget {
       children: [
         Text(
           exerciseName,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 9),
         ...sets.map(
@@ -296,10 +270,7 @@ class WorkoutHistoryScreen extends StatelessWidget {
                   SizedBox(height: 20),
                   Text(
                     'No Missions Recorded',
-                    style: TextStyle(
-                      fontSize: 21,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
                   ),
                   SizedBox(height: 8),
                   Text(
@@ -324,7 +295,7 @@ class WorkoutHistoryScreen extends StatelessWidget {
       return 'Previous Workout';
     }
 
-    return 'Push Day';
+    return session.workoutName;
   }
 
   String _formatVolume(WorkoutSession session) {
@@ -368,8 +339,8 @@ class WorkoutHistoryScreen extends StatelessWidget {
     final hour = date.hour == 0
         ? 12
         : date.hour > 12
-            ? date.hour - 12
-            : date.hour;
+        ? date.hour - 12
+        : date.hour;
 
     final minute = date.minute.toString().padLeft(2, '0');
     final period = date.hour >= 12 ? 'PM' : 'AM';

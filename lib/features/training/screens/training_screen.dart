@@ -36,36 +36,76 @@ class _TrainingScreenState extends State<TrainingScreen> {
   bool _isResting = false;
   bool _isTimerPaused = false;
 
-  int get _currentSetNumber => _completedSets.length + 1;
-  int _currentExerciseIndex = 0;
+  int get _currentSetNumber {
+    final activeWorkout = SessionManager.activeWorkout;
 
-WorkoutPlan? get _currentPlan {
-  final activeWorkout = SessionManager.activeWorkout;
+    if (activeWorkout == null) {
+      return 1;
+    }
 
-  if (activeWorkout == null) return null;
+    final currentExerciseSets = WorkoutStorageService.getAllSets().where((set) {
+      return set.sessionId == activeWorkout.sessionId &&
+          set.exerciseName == _currentExerciseName;
+    }).length;
 
-  return WorkoutPlans.forType(activeWorkout.type);
-}
-
-String get _currentExerciseName {
-  final plan = _currentPlan;
-
-  if (plan == null || plan.exercises.isEmpty) {
-    return 'No Exercise';
+    return currentExerciseSets + 1;
   }
 
-  return plan.exercises[_currentExerciseIndex];
-}
+  int _currentExerciseIndex = 0;
 
-int get _totalExercises {
-  return _currentPlan?.exercises.length ?? 0;
-}
+  WorkoutPlan? get _currentPlan {
+    final activeWorkout = SessionManager.activeWorkout;
+
+    if (activeWorkout == null) return null;
+
+    return WorkoutPlans.forType(activeWorkout.type);
+  }
+
+  String get _currentExerciseName {
+    final plan = _currentPlan;
+
+    if (plan == null || plan.exercises.isEmpty) {
+      return 'No Exercise';
+    }
+
+    return plan.exercises[_currentExerciseIndex];
+  }
+
+  int get _totalExercises {
+    return _currentPlan?.exercises.length ?? 0;
+  }
+
+  bool get _isLastExercise {
+    if (_totalExercises == 0) {
+      return false;
+    }
+
+    return _currentExerciseIndex >= _totalExercises - 1;
+  }
 
   double get _totalVolume {
     return _completedSets.fold(
       0,
       (total, set) => total + (set.weight * set.reps),
     );
+  }
+
+  List<WorkoutSet> get _activeSessionSets {
+    final activeWorkout = SessionManager.activeWorkout;
+
+    if (activeWorkout == null) {
+      return [];
+    }
+
+    return WorkoutStorageService.getAllSets().where((set) {
+      return set.sessionId == activeWorkout.sessionId;
+    }).toList();
+  }
+
+  int get _sessionSetCount => _activeSessionSets.length;
+
+  double get _sessionTotalVolume {
+    return _activeSessionSets.fold(0, (total, set) => total + set.volume);
   }
 
   @override
@@ -75,8 +115,22 @@ int get _totalExercises {
   }
 
   void _loadWorkoutHistory() {
+    final activeWorkout = SessionManager.activeWorkout;
+
+    if (activeWorkout == null) {
+      setState(() {
+        _completedSets = [];
+      });
+      return;
+    }
+
+    final allSets = WorkoutStorageService.getAllSets();
+
     setState(() {
-      _completedSets = WorkoutStorageService.getAllSets();
+      _completedSets = allSets.where((set) {
+        return set.sessionId == activeWorkout.sessionId &&
+            set.exerciseName == _currentExerciseName;
+      }).toList();
     });
   }
 
@@ -132,6 +186,7 @@ int get _totalExercises {
       unit: unit,
       completedAt: DateTime.now(),
       sessionId: activeWorkout.sessionId,
+      workoutName: activeWorkout.name,
     );
 
     await WorkoutStorageService.saveSet(workoutSet);
@@ -230,6 +285,39 @@ int get _totalExercises {
         '${seconds.toString().padLeft(2, '0')}';
   }
 
+  Future<void> _confirmFinishWorkout() async {
+    final shouldFinish = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Finish Mission?'),
+          content: const Text(
+            'Are you sure you are done with this workout? '
+            'You will return to the Command Center.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: const Text('CANCEL'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true);
+              },
+              child: const Text('FINISH MISSION'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldFinish == true && mounted) {
+      _finishWorkout();
+    }
+  }
+
   void _finishWorkout() {
     final finishedWorkout = SessionManager.finishWorkout();
 
@@ -241,13 +329,7 @@ int get _totalExercises {
     }
     _restTimer?.cancel();
 
-    setState(() {
-      _isResting = false;
-      _isTimerPaused = false;
-      _remainingSeconds = _restSeconds;
-      _completedSets = [];
-        _currentExerciseIndex = 0;
-    });
+    _resetWorkoutProgress();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -260,31 +342,65 @@ int get _totalExercises {
     widget.onWorkoutFinished();
   }
 
-void _nextExercise() {
-  final plan = _currentPlan;
+  void _resetWorkoutProgress() {
+    setState(() {
+      _currentExerciseIndex = 0;
+      _completedSets.clear();
 
-  if (plan == null) return;
+      _weightController.text = '40';
+      _repsController.text = '10';
 
-  if (_currentExerciseIndex >= plan.exercises.length - 1) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'You have reached the final exercise. Finish the mission when ready.',
-        ),
-      ),
-    );
-    return;
+      _isResting = false;
+      _isTimerPaused = false;
+      _remainingSeconds = _restSeconds;
+    });
   }
 
-  setState(() {
-    _currentExerciseIndex++;
+  void _nextExercise() {
+    final plan = _currentPlan;
 
-    _completedSets.clear();
+    if (plan == null) return;
 
-    _weightController.text = '40';
-    _repsController.text = '10';
-  });
-}
+    if (_currentExerciseIndex >= plan.exercises.length - 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'You have reached the final exercise. Finish the mission when ready.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _currentExerciseIndex++;
+
+      _loadWorkoutHistory();
+
+      _weightController.text = '40';
+      _repsController.text = '10';
+    });
+  }
+
+  void _previousExercise() {
+    if (_currentExerciseIndex <= 0) {
+      return;
+    }
+
+    setState(() {
+      _currentExerciseIndex--;
+    });
+
+    _loadWorkoutHistory();
+
+    _restTimer?.cancel();
+
+    setState(() {
+      _isResting = false;
+      _isTimerPaused = false;
+      _remainingSeconds = _restSeconds;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -330,27 +446,43 @@ void _nextExercise() {
             _buildSetHistory(),
           ],
 
-          if (_isResting) ...[
-  const SizedBox(height: 16),
-  _buildRestTimer(),
-],
+          if (_isResting) ...[const SizedBox(height: 16), _buildRestTimer()],
 
-const SizedBox(height: 16),
+          if (_totalExercises > 0) ...[
+            const SizedBox(height: 16),
 
-SizedBox(
-  width: double.infinity,
-  child: FilledButton.icon(
-    onPressed: _nextExercise,
-    icon: const Icon(Icons.skip_next_rounded),
-    label: const Text('NEXT EXERCISE'),
-  ),
-),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _currentExerciseIndex == 0
+                        ? null
+                        : _previousExercise,
+                    icon: const Icon(Icons.skip_previous_rounded),
+                    label: const Text('PREVIOUS'),
+                  ),
+                ),
 
-const SizedBox(height: 16),
-_buildMissionControl(),
+                if (!_isLastExercise) ...[
+                  const SizedBox(width: 12),
 
-const SizedBox(height: 16),
-_buildExerciseGuideButton(),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _nextExercise,
+                      icon: const Icon(Icons.skip_next_rounded),
+                      label: const Text('NEXT'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 16),
+          _buildMissionControl(),
+
+          const SizedBox(height: 16),
+          _buildExerciseGuideButton(),
         ],
       ),
     );
@@ -378,7 +510,7 @@ _buildExerciseGuideButton(),
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-  _currentExerciseName,
+                  _currentExerciseName,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                 ),
                 SizedBox(height: 4),
@@ -692,7 +824,7 @@ _buildExerciseGuideButton(),
                 child: _buildMissionStat(
                   icon: Icons.format_list_numbered_rounded,
                   label: 'Sets',
-                  value: '${_completedSets.length}',
+                  value: '$_sessionSetCount',
                 ),
               ),
               const SizedBox(width: 12),
@@ -700,29 +832,31 @@ _buildExerciseGuideButton(),
                 child: _buildMissionStat(
                   icon: Icons.fitness_center_rounded,
                   label: 'Volume',
-                  value: '${_formatNumber(_totalVolume)} $unit',
+                  value: '${_formatNumber(_sessionTotalVolume)} $unit',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: activeWorkout == null ? null : _finishWorkout,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              icon: const Icon(Icons.flag_rounded),
-              label: const Text(
-                'FINISH MISSION',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
+          if (_isLastExercise) ...[
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: activeWorkout == null ? null : _confirmFinishWorkout,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                icon: const Icon(Icons.flag_rounded),
+                label: const Text(
+                  'FINISH MISSION',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

@@ -23,6 +23,7 @@ class WorkoutSetAdapter extends TypeAdapter<WorkoutSet> {
       reps: fields[3] as int,
       unit: fields[4] as String,
       completedAt: fields[5] as DateTime,
+      workoutName: fields[7] as String,
       sessionId: fields[6] as String?,
     );
   }
@@ -30,7 +31,7 @@ class WorkoutSetAdapter extends TypeAdapter<WorkoutSet> {
   @override
   void write(BinaryWriter writer, WorkoutSet obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.exerciseName)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class WorkoutSetAdapter extends TypeAdapter<WorkoutSet> {
       ..writeByte(5)
       ..write(obj.completedAt)
       ..writeByte(6)
-      ..write(obj.sessionId);
+      ..write(obj.sessionId)
+      ..writeByte(7)
+      ..write(obj.workoutName);
   }
 
   @override

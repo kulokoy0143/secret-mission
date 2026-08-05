@@ -6,6 +6,10 @@ class SessionManager {
 
   static ActiveWorkout? _activeWorkout;
 
+  static final ValueNotifier<String?> sessionNotifier = ValueNotifier<String?>(
+    null,
+  );
+
   static ActiveWorkout? get activeWorkout => _activeWorkout;
 
   static bool get isWorkoutActive => _activeWorkout != null;
@@ -14,14 +18,9 @@ class SessionManager {
 
   static DateTime? get workoutStartedAt => _activeWorkout?.startedAt;
 
-  static void startWorkout({
-    required WorkoutType type,
-    String? customName,
-  }) {
+  static void startWorkout({required WorkoutType type, String? customName}) {
     if (_activeWorkout != null) {
-      debugPrint(
-        'Workout already active: ${_activeWorkout!.sessionId}',
-      );
+      debugPrint('Workout already active: ${_activeWorkout!.sessionId}');
       return;
     }
 

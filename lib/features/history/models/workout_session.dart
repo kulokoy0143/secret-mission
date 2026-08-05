@@ -18,10 +18,15 @@ class WorkoutSession {
   }
 
   double get totalVolume {
-    return sets.fold(
-      0,
-      (total, set) => total + set.volume,
-    );
+    return sets.fold(0, (total, set) => total + set.volume);
+  }
+
+  String get workoutName {
+    if (sets.isEmpty) {
+      return 'Workout';
+    }
+
+    return sets.first.workoutName;
   }
 
   DateTime get finishedAt {

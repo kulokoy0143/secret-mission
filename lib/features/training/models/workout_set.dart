@@ -11,6 +11,7 @@ class WorkoutSet extends HiveObject {
     required this.reps,
     required this.unit,
     required this.completedAt,
+    required this.workoutName,
     this.sessionId,
   });
 
@@ -35,6 +36,9 @@ class WorkoutSet extends HiveObject {
   // Nullable so workout sets saved before Mission 4 remain compatible.
   @HiveField(6)
   final String? sessionId;
+
+  @HiveField(7)
+  final String workoutName;
 
   double get volume => weight * reps;
 }
