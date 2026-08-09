@@ -39,54 +39,87 @@ class ExerciseGuideScreen extends StatelessWidget {
             _buildExerciseHeader(guide),
             const SizedBox(height: 16),
 
+            _buildWhyThisExercise(guide),
+            const SizedBox(height: 16),
+
             _buildMovementImage(guide),
             const SizedBox(height: 16),
 
             _buildMuscleImages(guide),
             const SizedBox(height: 16),
 
-            _buildSection(
-              title: 'MUSCLES WORKED',
-              icon: Icons.accessibility_new_rounded,
-              children: [
-                ...guide.primaryMuscles.map(
-                  (muscle) => _GuidePoint(
-                    text: '$muscle — primary muscle',
-                  ),
-                ),
-                ...guide.secondaryMuscles.map(
-                  (muscle) => _GuidePoint(
-                    text: '$muscle — secondary muscle',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+_buildSection(
+  title: 'MUSCLES WORKED',
+  icon: Icons.accessibility_new_rounded,
+  children: [
+    _MuscleRoleGroup(
+      title: 'PRIMARY',
+      muscles: guide.primaryMuscles,
+      icon: Icons.bolt_rounded,
+    ),
 
-            _buildSection(
-              title: 'HOW TO PERFORM',
-              icon: Icons.format_list_numbered_rounded,
-              children: List.generate(
-                guide.steps.length,
-                (index) => _NumberedStep(
-                  number: index + 1,
-                  text: guide.steps[index],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            _buildSection(
-              title: 'COMMON MISTAKES',
-              icon: Icons.warning_amber_rounded,
-              children: guide.commonMistakes
-    .map(
-      (mistake) => _WarningPoint(
-        text: '${mistake.title}: ${mistake.description}',
+    if (guide.secondaryMuscles.isNotEmpty) ...[
+      const SizedBox(height: 16),
+      _MuscleRoleGroup(
+        title: 'SECONDARY',
+        muscles: guide.secondaryMuscles,
+        icon: Icons.add_circle_outline_rounded,
       ),
-    )
-    .toList(),
-            ),
+    ],
+
+    if (guide.stabilizerMuscles.isNotEmpty) ...[
+      const SizedBox(height: 16),
+      _MuscleRoleGroup(
+        title: 'STABILIZERS',
+        muscles: guide.stabilizerMuscles,
+        icon: Icons.shield_outlined,
+      ),
+    ],
+  ],
+),
+            const SizedBox(height: 16),
+
+_buildSection(
+  title: 'HOW TO PERFORM',
+  icon: Icons.fitness_center_rounded,
+  children: [
+    _InstructionPhase(
+      title: 'SETUP',
+      icon: Icons.tune_rounded,
+      steps: guide.setupSteps,
+    ),
+
+    const SizedBox(height: 18),
+
+    _InstructionPhase(
+      title: 'EXECUTION',
+      icon: Icons.play_arrow_rounded,
+      steps: guide.executionSteps,
+    ),
+
+    const SizedBox(height: 18),
+
+    _InstructionPhase(
+      title: 'RETURN',
+      icon: Icons.replay_rounded,
+      steps: guide.returnSteps,
+    ),
+  ],
+),
+            const SizedBox(height: 16),
+
+_buildSection(
+  title: 'COMMON MISTAKES',
+  icon: Icons.warning_amber_rounded,
+  children: guide.commonMistakes
+      .map(
+        (mistake) => _MistakeCard(
+          title: mistake.title,
+          description: mistake.description,
+        ),
+      )
+      .toList(),
+),
             const SizedBox(height: 16),
 
             _buildCommanderTip(guide),
@@ -193,6 +226,23 @@ class ExerciseGuideScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildWhyThisExercise(ExerciseGuide guide) {
+    return _buildSection(
+      title: 'WHY THIS EXERCISE',
+      icon: Icons.lightbulb_rounded,
+      children: [
+        Text(
+          guide.whyThisExercise,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 15,
+            height: 1.6,
+          ),
+        ),
+      ],
     );
   }
 
@@ -323,7 +373,7 @@ class ExerciseGuideScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'COMMANDER TIP',
+                  "COMMANDER'S INSIGHT",
                   style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
@@ -332,7 +382,7 @@ class ExerciseGuideScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  guide.proTip,
+                  guide.commanderInsight,
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     height: 1.5,
@@ -499,33 +549,175 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-class _GuidePoint extends StatelessWidget {
-  const _GuidePoint({
-    required this.text,
+class _MuscleRoleGroup extends StatelessWidget {
+  const _MuscleRoleGroup({
+    required this.title,
+    required this.muscles,
+    required this.icon,
   });
 
-  final String text;
+  final String title;
+  final List<String> muscles;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: muscles
+                .map(
+                  (muscle) => _MuscleChip(
+                    label: muscle,
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MuscleChip extends StatelessWidget {
+  const _MuscleChip({
+    required this.label,
+  });
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 8,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _MistakeCard extends StatelessWidget {
+  const _MistakeCard({
+    required this.title,
+    required this.description,
+  });
+
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.orange.withValues(alpha: 0.22),
+        ),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.check_circle_rounded,
-            size: 19,
-            color: AppColors.success,
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.close_rounded,
+              color: Colors.orange,
+              size: 21,
+            ),
           ),
-          const SizedBox(width: 10),
+
+          const SizedBox(width: 12),
+
           Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                height: 1.45,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -534,43 +726,66 @@ class _GuidePoint extends StatelessWidget {
   }
 }
 
-class _WarningPoint extends StatelessWidget {
-  const _WarningPoint({
-    required this.text,
+class _InstructionPhase extends StatelessWidget {
+  const _InstructionPhase({
+    required this.title,
+    required this.icon,
+    required this.steps,
   });
 
-  final String text;
+  final String title;
+  final IconData icon;
+  final List<String> steps;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.close_rounded,
-            size: 20,
-            color: Colors.orange,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                height: 1.45,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 18,
+                color: AppColors.primary,
               ),
             ),
+            const SizedBox(width: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        ...List.generate(
+          steps.length,
+          (index) => _PhaseStep(
+            number: index + 1,
+            text: steps[index],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class _NumberedStep extends StatelessWidget {
-  const _NumberedStep({
+class _PhaseStep extends StatelessWidget {
+  const _PhaseStep({
     required this.number,
     required this.text,
   });
@@ -581,29 +796,36 @@ class _NumberedStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+          Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
             child: Text(
               '$number',
               style: const TextStyle(
                 color: AppColors.primary,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
+
           const SizedBox(width: 12),
+
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
                 color: AppColors.textSecondary,
-                height: 1.45,
+                height: 1.5,
               ),
             ),
           ),
