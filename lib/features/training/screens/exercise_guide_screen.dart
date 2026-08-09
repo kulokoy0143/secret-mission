@@ -19,7 +19,7 @@ class ExerciseGuideScreen extends StatelessWidget {
     if (guide == null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Exercise Guide'),
+          title: const Text('Mission Briefing'),
           backgroundColor: AppColors.background,
         ),
         body: _buildMissingGuide(),
@@ -28,7 +28,7 @@ class ExerciseGuideScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Exercise Guide'),
+        title: const Text('Mission Briefing'),
         backgroundColor: AppColors.background,
       ),
       body: SingleChildScrollView(
@@ -36,17 +36,11 @@ class ExerciseGuideScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildExerciseHeader(guide),
-            const SizedBox(height: 16),
+           _buildExerciseHeader(guide),
+const SizedBox(height: 16),
 
-            _buildWhyThisExercise(guide),
-            const SizedBox(height: 16),
-
-            _buildMovementImage(guide),
-            const SizedBox(height: 16),
-
-            _buildMuscleImages(guide),
-            const SizedBox(height: 16),
+_buildWhyThisExercise(guide),
+const SizedBox(height: 16),
 
 _buildSection(
   title: 'MUSCLES WORKED',
@@ -77,7 +71,10 @@ _buildSection(
     ],
   ],
 ),
-            const SizedBox(height: 16),
+const SizedBox(height: 16),
+
+_buildCommanderTip(guide),
+const SizedBox(height: 16),
 
 _buildSection(
   title: 'HOW TO PERFORM',
@@ -106,7 +103,7 @@ _buildSection(
     ),
   ],
 ),
-            const SizedBox(height: 16),
+const SizedBox(height: 16),
 
 _buildSection(
   title: 'COMMON MISTAKES',
@@ -120,9 +117,12 @@ _buildSection(
       )
       .toList(),
 ),
-            const SizedBox(height: 16),
+const SizedBox(height: 16),
 
-            _buildCommanderTip(guide),
+_buildMovementImage(guide),
+const SizedBox(height: 16),
+
+_buildMuscleImages(guide),
           ],
         ),
       ),
