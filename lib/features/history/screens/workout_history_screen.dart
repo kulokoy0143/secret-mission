@@ -38,12 +38,36 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
         builder: (context, box, child) {
           final sessions = HistoryService.getWorkoutHistory();
           final selectedSessions = _sessionsForDate(sessions, _selectedDate);
+          final monthlySessions = sessions.where((session) {
+            return session.startedAt.year == _focusedMonth.year &&
+                session.startedAt.month == _focusedMonth.month;
+          }).toList();
+
+          final monthlyMissionCount = monthlySessions.length;
+
+          final monthlyExerciseCount = monthlySessions.fold<int>(
+            0,
+            (total, session) => total + session.exerciseCount,
+          );
+
+          final monthlySetCount = monthlySessions.fold<int>(
+            0,
+            (total, session) => total + session.totalSets,
+          );
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
             children: [
               _buildHeader(),
               const SizedBox(height: 24),
+
+              _buildMonthlyIntelCard(
+                missions: monthlyMissionCount,
+                exercises: monthlyExerciseCount,
+                sets: monthlySetCount,
+              ),
+
+              const SizedBox(height: 16),
 
               _buildCalendar(sessions),
 
@@ -100,6 +124,83 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
         Text(
           'Select a date to review your completed training missions.',
           style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMonthlyIntelCard({
+    required int missions,
+    required int exercises,
+    required int sets,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'MONTHLY MISSION INTEL',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Row(
+            children: [
+              Expanded(
+                child: _buildIntelStat(
+                  value: missions.toString(),
+                  label: 'MISSIONS',
+                ),
+              ),
+              Expanded(
+                child: _buildIntelStat(
+                  value: exercises.toString(),
+                  label: 'EXERCISES',
+                ),
+              ),
+              Expanded(
+                child: _buildIntelStat(value: sets.toString(), label: 'SETS'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIntelStat({required String value, required String label}) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            color: AppColors.primary,
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+          ),
         ),
       ],
     );
