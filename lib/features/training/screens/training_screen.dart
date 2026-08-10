@@ -31,8 +31,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
   bool _usesKilograms = false;
 
   Timer? _restTimer;
-  int _restSeconds = 90;
-  int _remainingSeconds = 90;
+  int _restSeconds = 120;
+  int _remainingSeconds = 120;
   bool _isResting = false;
   bool _isTimerPaused = false;
 
@@ -902,10 +902,9 @@ class _TrainingScreenState extends State<TrainingScreen> {
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-  builder: (_) => ExerciseGuideScreen(
-    exerciseName: _currentExerciseName,
-  ),
-),
+              builder: (_) =>
+                  ExerciseGuideScreen(exerciseName: _currentExerciseName),
+            ),
           );
         },
         icon: const Icon(Icons.menu_book_rounded),

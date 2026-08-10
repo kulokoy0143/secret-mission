@@ -15,7 +15,10 @@ class WorkoutHistoryScreen extends StatefulWidget {
 class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
   late DateTime _focusedMonth;
   late DateTime _selectedDate;
+
   bool _isSelectedDateExpanded = false;
+
+  final Set<String> _expandedSessionIds = {};
 
   @override
   void initState() {
@@ -34,10 +37,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
         valueListenable: Hive.box<WorkoutSet>('workout_sets').listenable(),
         builder: (context, box, child) {
           final sessions = HistoryService.getWorkoutHistory();
-          final selectedSessions = _sessionsForDate(
-            sessions,
-            _selectedDate,
-          );
+          final selectedSessions = _sessionsForDate(sessions, _selectedDate);
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -47,30 +47,30 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
 
               _buildCalendar(sessions),
 
-AnimatedSize(
-  duration: const Duration(milliseconds: 280),
-  curve: Curves.easeInOut,
-  child: _isSelectedDateExpanded
-      ? Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 20),
-            _buildSelectedDateHeader(),
-            const SizedBox(height: 12),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeInOut,
+                child: _isSelectedDateExpanded
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 20),
+                          _buildSelectedDateHeader(),
+                          const SizedBox(height: 12),
 
-            if (selectedSessions.isEmpty)
-              _buildNoMissionsForDay()
-            else
-              ...selectedSessions.map(
-                (session) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _buildSessionCard(session),
-                ),
+                          if (selectedSessions.isEmpty)
+                            _buildNoMissionsForDay()
+                          else
+                            ...selectedSessions.map(
+                              (session) => Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _buildSessionCard(session),
+                              ),
+                            ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
               ),
-          ],
-        )
-      : const SizedBox.shrink(),
-),
             ],
           );
         },
@@ -94,33 +94,19 @@ AnimatedSize(
         SizedBox(height: 6),
         Text(
           'Workout Calendar',
-          style: TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
-          ),
+          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
         ),
         SizedBox(height: 6),
         Text(
           'Select a date to review your completed training missions.',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            height: 1.4,
-          ),
+          style: TextStyle(color: AppColors.textSecondary, height: 1.4),
         ),
       ],
     );
   }
 
   Widget _buildCalendar(List<WorkoutSession> sessions) {
-    const weekdayLabels = [
-      'MON',
-      'TUE',
-      'WED',
-      'THU',
-      'FRI',
-      'SAT',
-      'SUN',
-    ];
+    const weekdayLabels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
     final firstDayOfMonth = DateTime(
       _focusedMonth.year,
@@ -141,9 +127,7 @@ AnimatedSize(
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         children: [
@@ -219,10 +203,7 @@ AnimatedSize(
 
               return _buildCalendarDay(
                 date: date,
-                hasWorkout: _hasSessionsOnDate(
-                  sessions,
-                  date,
-                ),
+                hasWorkout: _hasSessionsOnDate(sessions, date),
               );
             },
           ),
@@ -231,37 +212,31 @@ AnimatedSize(
     );
   }
 
-  Widget _buildCalendarDay({
-    required DateTime date,
-    required bool hasWorkout,
-  }) {
+  Widget _buildCalendarDay({required DateTime date, required bool hasWorkout}) {
     final isSelected = _isSameDay(date, _selectedDate);
 
     final now = DateTime.now();
-    final isToday = _isSameDay(
-      date,
-      DateTime(now.year, now.month, now.day),
-    );
+    final isToday = _isSameDay(date, DateTime(now.year, now.month, now.day));
 
     return InkWell(
       onTap: () {
-  setState(() {
-    if (_isSameDay(date, _selectedDate)) {
-      _isSelectedDateExpanded = !_isSelectedDateExpanded;
-    } else {
-      _selectedDate = date;
-      _isSelectedDateExpanded = true;
-    }
-  });
-},
+        setState(() {
+          if (_isSameDay(date, _selectedDate)) {
+            _isSelectedDateExpanded = !_isSelectedDateExpanded;
+          } else {
+            _selectedDate = date;
+            _isSelectedDateExpanded = true;
+          }
+        });
+      },
       borderRadius: BorderRadius.circular(14),
       child: Container(
         decoration: BoxDecoration(
           color: isSelected
-    ? AppColors.primary
-    : hasWorkout
-        ? AppColors.primary.withValues(alpha: 0.16)
-        : Colors.transparent,
+              ? AppColors.primary
+              : hasWorkout
+              ? AppColors.primary.withValues(alpha: 0.16)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isToday && !isSelected
@@ -336,16 +311,11 @@ AnimatedSize(
   Widget _buildNoMissionsForDay() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 28,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: const Column(
         children: [
@@ -357,19 +327,13 @@ AnimatedSize(
           SizedBox(height: 12),
           Text(
             'No Mission Recorded',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
           ),
           SizedBox(height: 6),
           Text(
             'No completed workout was recorded on this date.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, height: 1.4),
           ),
         ],
       ),
@@ -378,114 +342,137 @@ AnimatedSize(
 
   Widget _buildSessionCard(WorkoutSession session) {
     final exercises = session.setsByExercise;
+    final isExpanded = _expandedSessionIds.contains(session.sessionId);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
+    return InkWell(
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedSessionIds.remove(session.sessionId);
+          } else {
+            _expandedSessionIds.add(session.sessionId);
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: const Icon(
+                    Icons.local_fire_department_rounded,
+                    color: AppColors.primary,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.local_fire_department_rounded,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _formatSessionTitle(session),
-                      style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _formatSessionTitle(session),
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      _formatTime(session.startedAt),
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
+                      const SizedBox(height: 5),
+                      Text(
+                        _formatTime(session.startedAt),
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStat(
-                  label: 'Exercises',
-                  value: '${session.exerciseCount}',
+                AnimatedRotation(
+                  turns: isExpanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 280),
+                  child: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.textSecondary,
+                    size: 26,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildStat(
-                  label: 'Sets',
-                  value: '${session.totalSets}',
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildStat(
-                  label: 'Volume',
-                  value: _formatVolume(session),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Divider(
-            height: 1,
-            color: AppColors.background,
-          ),
-          const SizedBox(height: 16),
-          ...exercises.entries.map(
-            (entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _buildExerciseSection(
-                exerciseName: entry.key,
-                sets: entry.value,
-              ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStat(
+                    label: 'Exercises',
+                    value: '${session.exerciseCount}',
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildStat(
+                    label: 'Sets',
+                    value: '${session.totalSets}',
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildStat(
+                    label: 'Volume',
+                    value: _formatVolume(session),
+                  ),
+                ),
+              ],
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeInOut,
+              child: isExpanded
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 20),
+                        const Divider(height: 1, color: AppColors.background),
+                        const SizedBox(height: 16),
+
+                        ...exercises.entries.map(
+                          (entry) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _buildExerciseSection(
+                              exerciseName: entry.key,
+                              sets: entry.value,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStat({
-    required String label,
-    required String value,
-  }) {
+  Widget _buildStat({required String label, required String value}) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(14),
@@ -496,10 +483,7 @@ AnimatedSize(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-            ),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 4),
           Text(
@@ -523,10 +507,7 @@ AnimatedSize(
       children: [
         Text(
           exerciseName,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 9),
         ...sets.map(
@@ -573,31 +554,15 @@ AnimatedSize(
     DateTime date,
   ) {
     return sessions
-        .where(
-          (session) => _isSameDay(
-            session.startedAt,
-            date,
-          ),
-        )
+        .where((session) => _isSameDay(session.startedAt, date))
         .toList();
   }
 
-  bool _hasSessionsOnDate(
-    List<WorkoutSession> sessions,
-    DateTime date,
-  ) {
-    return sessions.any(
-      (session) => _isSameDay(
-        session.startedAt,
-        date,
-      ),
-    );
+  bool _hasSessionsOnDate(List<WorkoutSession> sessions, DateTime date) {
+    return sessions.any((session) => _isSameDay(session.startedAt, date));
   }
 
-  bool _isSameDay(
-    DateTime first,
-    DateTime second,
-  ) {
+  bool _isSameDay(DateTime first, DateTime second) {
     return first.year == second.year &&
         first.month == second.month &&
         first.day == second.day;
@@ -605,31 +570,17 @@ AnimatedSize(
 
   void _showPreviousMonth() {
     setState(() {
-      _focusedMonth = DateTime(
-        _focusedMonth.year,
-        _focusedMonth.month - 1,
-      );
+      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1);
 
-      _selectedDate = DateTime(
-        _focusedMonth.year,
-        _focusedMonth.month,
-        1,
-      );
+      _selectedDate = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
     });
   }
 
   void _showNextMonth() {
     setState(() {
-      _focusedMonth = DateTime(
-        _focusedMonth.year,
-        _focusedMonth.month + 1,
-      );
+      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1);
 
-      _selectedDate = DateTime(
-        _focusedMonth.year,
-        _focusedMonth.month,
-        1,
-      );
+      _selectedDate = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
     });
   }
 
@@ -701,8 +652,8 @@ AnimatedSize(
     final hour = date.hour == 0
         ? 12
         : date.hour > 12
-            ? date.hour - 12
-            : date.hour;
+        ? date.hour - 12
+        : date.hour;
 
     final minute = date.minute.toString().padLeft(2, '0');
     final period = date.hour >= 12 ? 'PM' : 'AM';
