@@ -242,13 +242,38 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                 ),
               ),
               Expanded(
-                child: Text(
-                  _formatMonthYear(_focusedMonth),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+                child: Column(
+                  children: [
+                    Text(
+                      _formatMonthYear(_focusedMonth),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    TextButton(
+                      onPressed: _showToday,
+                      style: TextButton.styleFrom(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'TODAY',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               IconButton(
@@ -667,6 +692,17 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     return first.year == second.year &&
         first.month == second.month &&
         first.day == second.day;
+  }
+
+  void _showToday() {
+    final now = DateTime.now();
+
+    setState(() {
+      _focusedMonth = DateTime(now.year, now.month);
+      _selectedDate = DateTime(now.year, now.month, now.day);
+      _isSelectedDateExpanded = true;
+      _expandedSessionIds.clear();
+    });
   }
 
   void _showPreviousMonth() {
