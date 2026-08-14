@@ -256,7 +256,6 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                     TextButton(
                       onPressed: _showToday,
                       style: TextButton.styleFrom(
-                        minimumSize: Size.zero,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 4,
