@@ -709,6 +709,9 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
       _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1);
 
       _selectedDate = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+
+      _isSelectedDateExpanded = false;
+      _expandedSessionIds.clear();
     });
   }
 
@@ -717,6 +720,9 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
       _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1);
 
       _selectedDate = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+
+      _isSelectedDateExpanded = false;
+      _expandedSessionIds.clear();
     });
   }
 
