@@ -79,7 +79,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 20),
-                          _buildSelectedDateHeader(),
+                          _buildSelectedDateHeader(selectedSessions.length),
                           const SizedBox(height: 12),
 
                           if (selectedSessions.isEmpty)
@@ -388,7 +388,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     );
   }
 
-  Widget _buildSelectedDateHeader() {
+  Widget _buildSelectedDateHeader(int missionCount) {
     return Row(
       children: [
         Container(
@@ -424,6 +424,19 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+
+              Text(
+                missionCount == 1
+                    ? '1 MISSION COMPLETED'
+                    : '$missionCount MISSIONS COMPLETED',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
                 ),
               ),
             ],
