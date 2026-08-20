@@ -20,8 +20,16 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
   void initState() {
     super.initState();
 
-    _sleepMinutes = RecoveryStorageService.getSleepMinutes();
-    _sleepQuality = RecoveryStorageService.getSleepQuality();
+    final today = DateTime.now();
+    final savedEntry = RecoveryStorageService.getSleepEntry(today);
+
+    if (savedEntry != null) {
+      _sleepMinutes = savedEntry.sleepMinutes;
+      _sleepQuality = savedEntry.quality;
+    } else {
+      _sleepMinutes = RecoveryStorageService.getSleepMinutes();
+      _sleepQuality = RecoveryStorageService.getSleepQuality();
+    }
   }
 
   @override
@@ -200,9 +208,12 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                 _sleepMinutes = value.round();
               });
 
-              RecoveryStorageService.saveSleep(
-                sleepMinutes: _sleepMinutes,
-                sleepQuality: _sleepQuality,
+              RecoveryStorageService.saveSleepEntry(
+                SleepEntry(
+                  date: DateTime.now(),
+                  sleepMinutes: _sleepMinutes,
+                  quality: _sleepQuality,
+                ),
               );
             },
           ),
@@ -230,9 +241,12 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                 _sleepQuality = value.round();
               });
 
-              RecoveryStorageService.saveSleep(
-                sleepMinutes: _sleepMinutes,
-                sleepQuality: _sleepQuality,
+              RecoveryStorageService.saveSleepEntry(
+                SleepEntry(
+                  date: DateTime.now(),
+                  sleepMinutes: _sleepMinutes,
+                  quality: _sleepQuality,
+                ),
               );
             },
           ),
