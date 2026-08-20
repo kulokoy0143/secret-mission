@@ -3,6 +3,7 @@ import 'package:secret_mission/app/app_theme.dart';
 import 'package:secret_mission/features/recovery/models/recovery_status.dart';
 import 'package:secret_mission/features/recovery/models/sleep_entry.dart';
 import 'package:secret_mission/features/recovery/services/recovery_service.dart';
+import 'package:secret_mission/features/recovery/services/recovery_storage_service.dart';
 
 class RecoveryScreen extends StatefulWidget {
   const RecoveryScreen({super.key});
@@ -14,6 +15,14 @@ class RecoveryScreen extends StatefulWidget {
 class _RecoveryScreenState extends State<RecoveryScreen> {
   int _sleepMinutes = 465;
   int _sleepQuality = 4;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _sleepMinutes = RecoveryStorageService.getSleepMinutes();
+    _sleepQuality = RecoveryStorageService.getSleepQuality();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -190,6 +199,11 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               setState(() {
                 _sleepMinutes = value.round();
               });
+
+              RecoveryStorageService.saveSleep(
+                sleepMinutes: _sleepMinutes,
+                sleepQuality: _sleepQuality,
+              );
             },
           ),
 
@@ -215,6 +229,11 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               setState(() {
                 _sleepQuality = value.round();
               });
+
+              RecoveryStorageService.saveSleep(
+                sleepMinutes: _sleepMinutes,
+                sleepQuality: _sleepQuality,
+              );
             },
           ),
         ],

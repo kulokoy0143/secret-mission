@@ -14,6 +14,7 @@ Future<void> main() async {
   }
 
   await Hive.openBox<WorkoutSet>('workout_sets');
+  await Hive.openBox<dynamic>('recovery_data');
 
   runApp(const SecretMissionApp());
 }
