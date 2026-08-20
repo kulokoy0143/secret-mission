@@ -3,6 +3,7 @@ import 'package:secret_mission/app/app_theme.dart';
 import 'package:secret_mission/features/training/screens/training_screen.dart';
 import 'package:secret_mission/features/history/screens/workout_history_screen.dart';
 import 'package:secret_mission/features/training/screens/workout_picker_screen.dart';
+import 'package:secret_mission/features/recovery/screens/recovery_screen.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
@@ -44,7 +45,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
               },
             ),
             const WorkoutHistoryScreen(),
-            _buildPlaceholder('Commander AI'),
+            const RecoveryScreen(),
             _buildPlaceholder('Agent File'),
           ],
         ),
@@ -75,9 +76,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
             label: 'History',
           ),
           NavigationDestination(
-            icon: Icon(Icons.smart_toy_outlined),
-            selectedIcon: Icon(Icons.smart_toy_rounded),
-            label: 'Commander',
+            icon: Icon(Icons.bedtime_outlined),
+            selectedIcon: Icon(Icons.bedtime_rounded),
+            label: 'Recovery',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
