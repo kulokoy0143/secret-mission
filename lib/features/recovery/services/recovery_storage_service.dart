@@ -33,6 +33,43 @@ class RecoveryStorageService {
     );
   }
 
+  static List<SleepEntry> getAllSleepEntries() {
+    final entries = <SleepEntry>[];
+
+    for (final key in _box.keys) {
+      if (key is! String || !key.startsWith('sleep_')) {
+        continue;
+      }
+
+      final data = _box.get(key);
+
+      if (data == null) {
+        continue;
+      }
+
+      final dateText = key.substring(6);
+      final date = DateTime.tryParse(dateText);
+
+      if (date == null) {
+        continue;
+      }
+
+      final values = Map<String, dynamic>.from(data as Map);
+
+      entries.add(
+        SleepEntry(
+          date: date,
+          sleepMinutes: (values['sleepMinutes'] as num).toInt(),
+          quality: (values['quality'] as num).toInt(),
+        ),
+      );
+    }
+
+    entries.sort((a, b) => b.date.compareTo(a.date));
+
+    return entries;
+  }
+
   static const String boxName = 'recovery_data';
 
   static Box<dynamic> get _box => Hive.box<dynamic>(boxName);

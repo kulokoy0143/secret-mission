@@ -42,6 +42,8 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
 
     final recovery = RecoveryService.calculateRecovery(sleep);
 
+    final sleepHistory = RecoveryStorageService.getAllSleepEntries();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: ListView(
@@ -73,6 +75,10 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
           const SizedBox(height: 16),
 
           _buildSleepCard(sleep),
+
+          const SizedBox(height: 16),
+
+          _buildRecoveryHistory(sleepHistory),
         ],
       ),
     );
@@ -253,5 +259,110 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildRecoveryHistory(List<SleepEntry> entries) {
+    if (entries.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        ),
+        child: const Text(
+          'No recovery history yet.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'RECOVERY HISTORY',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          ...entries.map((entry) {
+            final recovery = RecoveryService.calculateRecovery(entry);
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _formatRecoveryDate(entry.date),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${entry.sleepHours.toStringAsFixed(1)}h • ${entry.quality}/5',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Text(
+                    '${recovery.score}%',
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  String _formatRecoveryDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 }
