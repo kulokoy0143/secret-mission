@@ -350,6 +350,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
               return _buildCalendarDay(
                 date: date,
                 hasWorkout: _hasSessionsOnDate(sessions, date),
+                hasRecovery: RecoveryStorageService.getSleepEntry(date) != null,
               );
             },
           ),
@@ -358,7 +359,11 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     );
   }
 
-  Widget _buildCalendarDay({required DateTime date, required bool hasWorkout}) {
+  Widget _buildCalendarDay({
+    required DateTime date,
+    required bool hasWorkout,
+    required bool hasRecovery,
+  }) {
     final isSelected = _isSameDay(date, _selectedDate);
 
     final now = DateTime.now();
@@ -390,19 +395,31 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                 : Colors.transparent,
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            Text(
-              '${date.day}',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: isSelected || isToday
-                    ? FontWeight.w800
-                    : FontWeight.w500,
+            Center(
+              child: Text(
+                '${date.day}',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: isSelected || isToday
+                      ? FontWeight.w800
+                      : FontWeight.w500,
+                ),
               ),
             ),
+
+            if (hasRecovery)
+              Positioned(
+                right: 5,
+                bottom: 5,
+                child: Icon(
+                  Icons.bedtime_rounded,
+                  size: 10,
+                  color: isSelected ? Colors.white : AppColors.primary,
+                ),
+              ),
           ],
         ),
       ),
