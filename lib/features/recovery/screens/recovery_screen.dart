@@ -15,13 +15,16 @@ class RecoveryScreen extends StatefulWidget {
 class _RecoveryScreenState extends State<RecoveryScreen> {
   int _sleepMinutes = 465;
   int _sleepQuality = 4;
+  late DateTime _selectedDate;
 
   @override
   void initState() {
     super.initState();
 
-    final today = DateTime.now();
-    final savedEntry = RecoveryStorageService.getSleepEntry(today);
+    final now = DateTime.now();
+    _selectedDate = DateTime(now.year, now.month, now.day);
+
+    final savedEntry = RecoveryStorageService.getSleepEntry(_selectedDate);
 
     if (savedEntry != null) {
       _sleepMinutes = savedEntry.sleepMinutes;
@@ -30,6 +33,43 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
       _sleepMinutes = RecoveryStorageService.getSleepMinutes();
       _sleepQuality = RecoveryStorageService.getSleepQuality();
     }
+  }
+
+  void _loadSelectedDateSleep() {
+    final savedEntry = RecoveryStorageService.getSleepEntry(_selectedDate);
+
+    setState(() {
+      if (savedEntry != null) {
+        _sleepMinutes = savedEntry.sleepMinutes;
+        _sleepQuality = savedEntry.quality;
+      } else {
+        _sleepMinutes = 465;
+        _sleepQuality = 4;
+      }
+    });
+  }
+
+  Future<void> _pickRecoveryDate() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2024),
+      lastDate: DateTime.now(),
+    );
+
+    if (pickedDate == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedDate = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+      );
+    });
+
+    _loadSelectedDateSleep();
   }
 
   @override
@@ -92,6 +132,44 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
             style: TextStyle(color: AppColors.textSecondary, height: 1.4),
           ),
           const SizedBox(height: 24),
+
+          InkWell(
+            onTap: _pickRecoveryDate,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_month_rounded,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '${_selectedDate.month}/${_selectedDate.day}/${_selectedDate.year}',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
 
           _buildRecoveryCard(recovery),
 
@@ -332,7 +410,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
 
               RecoveryStorageService.saveSleepEntry(
                 SleepEntry(
-                  date: DateTime.now(),
+                  date: _selectedDate,
                   sleepMinutes: _sleepMinutes,
                   quality: _sleepQuality,
                 ),
@@ -365,7 +443,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
 
               RecoveryStorageService.saveSleepEntry(
                 SleepEntry(
-                  date: DateTime.now(),
+                  date: _selectedDate,
                   sleepMinutes: _sleepMinutes,
                   quality: _sleepQuality,
                 ),
