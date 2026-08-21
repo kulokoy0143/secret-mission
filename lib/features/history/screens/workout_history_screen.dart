@@ -4,6 +4,8 @@ import 'package:secret_mission/app/app_theme.dart';
 import 'package:secret_mission/features/history/models/workout_session.dart';
 import 'package:secret_mission/features/history/services/history_service.dart';
 import 'package:secret_mission/features/training/models/workout_set.dart';
+import 'package:secret_mission/features/recovery/services/recovery_service.dart';
+import 'package:secret_mission/features/recovery/services/recovery_storage_service.dart';
 
 class WorkoutHistoryScreen extends StatefulWidget {
   const WorkoutHistoryScreen({super.key});
@@ -38,6 +40,13 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
         builder: (context, box, child) {
           final sessions = HistoryService.getWorkoutHistory();
           final selectedSessions = _sessionsForDate(sessions, _selectedDate);
+          final selectedRecoveryEntry = RecoveryStorageService.getSleepEntry(
+            _selectedDate,
+          );
+
+          final selectedRecovery = selectedRecoveryEntry == null
+              ? null
+              : RecoveryService.calculateRecovery(selectedRecoveryEntry);
           final monthlySessions = sessions.where((session) {
             return session.startedAt.year == _focusedMonth.year &&
                 session.startedAt.month == _focusedMonth.month;
@@ -81,6 +90,18 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                           const SizedBox(height: 20),
                           _buildSelectedDateHeader(selectedSessions.length),
                           const SizedBox(height: 12),
+
+                          if (selectedRecoveryEntry != null &&
+                              selectedRecovery != null) ...[
+                            _buildRecoverySummaryCard(
+                              sleepMinutes: selectedRecoveryEntry.sleepMinutes,
+                              quality: selectedRecoveryEntry.quality,
+                              recoveryScore: selectedRecovery.score,
+                              recoveryLabel: selectedRecovery.label,
+                            ),
+
+                            const SizedBox(height: 16),
+                          ],
 
                           if (selectedSessions.isEmpty)
                             _buildNoMissionsForDay()
@@ -443,6 +464,96 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRecoverySummaryCard({
+    required int sleepMinutes,
+    required int quality,
+    required int recoveryScore,
+    required String recoveryLabel,
+  }) {
+    final hours = sleepMinutes ~/ 60;
+    final minutes = sleepMinutes % 60;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'RECOVERY INTEL: $recoveryLabel',
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Row(
+            children: [
+              Expanded(
+                child: _buildRecoveryStat(
+                  label: 'Sleep',
+                  value: '${hours}h ${minutes}m',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildRecoveryStat(
+                  label: 'Quality',
+                  value: '$quality/5',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildRecoveryStat(
+                  label: 'Recovery',
+                  value: '$recoveryScore%',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecoveryStat({required String label, required String value}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

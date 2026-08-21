@@ -49,6 +49,20 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
     });
   }
 
+  Future<void> _saveSelectedDateSleep() async {
+    await RecoveryStorageService.saveSleepEntry(
+      SleepEntry(
+        date: _selectedDate,
+        sleepMinutes: _sleepMinutes,
+        quality: _sleepQuality,
+      ),
+    );
+
+    if (!mounted) return;
+
+    setState(() {});
+  }
+
   Future<void> _pickRecoveryDate() async {
     final pickedDate = await showDatePicker(
       context: context,
@@ -70,6 +84,134 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
     });
 
     _loadSelectedDateSleep();
+  }
+
+  void _showSleepQualityGuide() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      showDragHandle: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'SLEEP QUALITY GUIDE',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                ),
+
+                const SizedBox(height: 6),
+
+                const Text(
+                  'Choose the score that best describes your overall night of sleep.',
+                  style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+                ),
+
+                const SizedBox(height: 20),
+
+                _buildQualityGuideItem(
+                  score: '1/5',
+                  title: 'VERY POOR',
+                  description:
+                      'Very restless sleep, frequent awakenings, difficulty falling asleep, or waking exhausted.',
+                ),
+
+                _buildQualityGuideItem(
+                  score: '2/5',
+                  title: 'POOR',
+                  description:
+                      'Several interruptions or restless periods, with noticeable tiredness after waking.',
+                ),
+
+                _buildQualityGuideItem(
+                  score: '3/5',
+                  title: 'FAIR',
+                  description:
+                      'Acceptable sleep with some interruptions. You feel somewhat rested, but not fully recovered.',
+                ),
+
+                _buildQualityGuideItem(
+                  score: '4/5',
+                  title: 'GOOD',
+                  description:
+                      'Mostly uninterrupted sleep, reasonable sleep onset, and you wake feeling rested.',
+                ),
+
+                _buildQualityGuideItem(
+                  score: '5/5',
+                  title: 'EXCELLENT',
+                  description:
+                      'Very restful and largely uninterrupted sleep. You wake feeling refreshed and well recovered.',
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildQualityGuideItem({
+    required String score,
+    required String title,
+    required String description,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              score,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -407,27 +549,34 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               setState(() {
                 _sleepMinutes = value.round();
               });
-
-              RecoveryStorageService.saveSleepEntry(
-                SleepEntry(
-                  date: _selectedDate,
-                  sleepMinutes: _sleepMinutes,
-                  quality: _sleepQuality,
-                ),
-              );
             },
           ),
 
           const SizedBox(height: 8),
 
-          const Text(
-            'SLEEP QUALITY',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-            ),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'SLEEP QUALITY',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _showSleepQualityGuide,
+                tooltip: 'Sleep Quality Guide',
+                icon: const Icon(
+                  Icons.info_outline_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+            ],
           ),
 
           Slider(
@@ -440,15 +589,32 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               setState(() {
                 _sleepQuality = value.round();
               });
-
-              RecoveryStorageService.saveSleepEntry(
-                SleepEntry(
-                  date: _selectedDate,
-                  sleepMinutes: _sleepMinutes,
-                  quality: _sleepQuality,
-                ),
-              );
             },
+          ),
+
+          const SizedBox(height: 18),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _saveSelectedDateSleep,
+              icon: const Icon(Icons.save_rounded, size: 20),
+              label: const Text(
+                'SAVE SLEEP LOG',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
           ),
         ],
       ),
