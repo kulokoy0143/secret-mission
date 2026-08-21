@@ -70,6 +70,15 @@ class RecoveryStorageService {
     return entries;
   }
 
+  static List<SleepEntry> getRecentSleepEntries({int days = 7}) {
+    final entries = getAllSleepEntries();
+    final cutoff = DateTime.now().subtract(Duration(days: days));
+
+    return entries.where((entry) {
+      return entry.date.isAfter(cutoff);
+    }).toList();
+  }
+
   static const String boxName = 'recovery_data';
 
   static Box<dynamic> get _box => Hive.box<dynamic>(boxName);

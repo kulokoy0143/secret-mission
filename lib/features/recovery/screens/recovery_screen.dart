@@ -44,6 +44,29 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
 
     final sleepHistory = RecoveryStorageService.getAllSleepEntries();
 
+    final weeklyEntries = RecoveryStorageService.getRecentSleepEntries(days: 7);
+
+    final weeklyAverageSleepMinutes = weeklyEntries.isEmpty
+        ? 0
+        : weeklyEntries
+                  .map((entry) => entry.sleepMinutes)
+                  .reduce((a, b) => a + b) ~/
+              weeklyEntries.length;
+
+    final weeklyAverageQuality = weeklyEntries.isEmpty
+        ? 0.0
+        : weeklyEntries.map((entry) => entry.quality).reduce((a, b) => a + b) /
+              weeklyEntries.length;
+
+    final weeklyAverageRecovery = weeklyEntries.isEmpty
+        ? 0
+        : weeklyEntries
+                  .map(
+                    (entry) => RecoveryService.calculateRecovery(entry).score,
+                  )
+                  .reduce((a, b) => a + b) ~/
+              weeklyEntries.length;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: ListView(
@@ -71,6 +94,14 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
           const SizedBox(height: 24),
 
           _buildRecoveryCard(recovery),
+
+          const SizedBox(height: 16),
+
+          _buildWeeklyIntelCard(
+            averageSleepMinutes: weeklyAverageSleepMinutes,
+            averageQuality: weeklyAverageQuality,
+            averageRecovery: weeklyAverageRecovery,
+          ),
 
           const SizedBox(height: 16),
 
@@ -124,6 +155,91 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildWeeklyIntelCard({
+    required int averageSleepMinutes,
+    required double averageQuality,
+    required int averageRecovery,
+  }) {
+    final hours = averageSleepMinutes ~/ 60;
+    final minutes = averageSleepMinutes % 60;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'WEEKLY RECOVERY INTEL',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Row(
+            children: [
+              Expanded(
+                child: _buildWeeklyStat(
+                  value: '${hours}h ${minutes}m',
+                  label: 'AVG SLEEP',
+                ),
+              ),
+              Expanded(
+                child: _buildWeeklyStat(
+                  value: averageQuality.toStringAsFixed(1),
+                  label: 'AVG QUALITY',
+                ),
+              ),
+              Expanded(
+                child: _buildWeeklyStat(
+                  value: '$averageRecovery%',
+                  label: 'AVG RECOVERY',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeeklyStat({required String value, required String label}) {
+    return Column(
+      children: [
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: AppColors.primary,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.6,
+          ),
+        ),
+      ],
     );
   }
 
