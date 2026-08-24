@@ -321,6 +321,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
             averageSleepMinutes: weeklyAverageSleepMinutes,
             averageQuality: weeklyAverageQuality,
             averageRecovery: weeklyAverageRecovery,
+            entries: weeklyEntries,
           ),
 
           const SizedBox(height: 16),
@@ -382,6 +383,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
     required int averageSleepMinutes,
     required double averageQuality,
     required int averageRecovery,
+    required List<SleepEntry> entries,
   }) {
     final hours = averageSleepMinutes ~/ 60;
     final minutes = averageSleepMinutes % 60;
@@ -431,8 +433,92 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 18),
+
+          const Text(
+            '7-DAY RECOVERY TREND',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          _buildRecoveryTrend(entries),
         ],
       ),
+    );
+  }
+
+  Widget _buildRecoveryTrend(List<SleepEntry> entries) {
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+
+    final days = List.generate(7, (index) {
+      final date = normalizedToday.subtract(Duration(days: 6 - index));
+
+      SleepEntry? entry;
+
+      for (final candidate in entries) {
+        if (candidate.date.year == date.year &&
+            candidate.date.month == date.month &&
+            candidate.date.day == date.day) {
+          entry = candidate;
+          break;
+        }
+      }
+
+      final score = entry == null
+          ? null
+          : RecoveryService.calculateRecovery(entry).score;
+
+      return (date: date, score: score);
+    });
+
+    const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: days.map((day) {
+        final score = day.score;
+        final barHeight = score == null ? 6.0 : 8.0 + (score / 100) * 38.0;
+
+        return Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 48,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    width: 8,
+                    height: barHeight,
+                    decoration: BoxDecoration(
+                      color: score == null
+                          ? AppColors.textSecondary.withValues(alpha: 0.18)
+                          : AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                dayLabels[day.date.weekday - 1],
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
