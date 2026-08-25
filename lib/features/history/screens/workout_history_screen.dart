@@ -94,6 +94,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                           if (selectedRecoveryEntry != null &&
                               selectedRecovery != null) ...[
                             _buildRecoverySummaryCard(
+                              date: _selectedDate,
                               sleepMinutes: selectedRecoveryEntry.sleepMinutes,
                               quality: selectedRecoveryEntry.quality,
                               recoveryScore: selectedRecovery.score,
@@ -485,6 +486,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
   }
 
   Widget _buildRecoverySummaryCard({
+    required DateTime date,
     required int sleepMinutes,
     required int quality,
     required int recoveryScore,
@@ -540,8 +542,83 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+
+          const Text(
+            '7-DAY RECOVERY CONTEXT',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.7,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          _buildHistoryRecoveryTrend(date),
         ],
       ),
+    );
+  }
+
+  Widget _buildHistoryRecoveryTrend(DateTime endDate) {
+    final normalizedEnd = DateTime(endDate.year, endDate.month, endDate.day);
+
+    final days = List.generate(7, (index) {
+      final date = normalizedEnd.subtract(Duration(days: 6 - index));
+
+      final entry = RecoveryStorageService.getSleepEntry(date);
+
+      final score = entry == null
+          ? null
+          : RecoveryService.calculateRecovery(entry).score;
+
+      return (date: date, score: score);
+    });
+
+    const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: days.map((day) {
+        final score = day.score;
+
+        final barHeight = score == null ? 5.0 : 6.0 + (score / 100) * 28.0;
+
+        return Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 36,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    width: 6,
+                    height: barHeight,
+                    decoration: BoxDecoration(
+                      color: score == null
+                          ? AppColors.textSecondary.withValues(alpha: 0.18)
+                          : AppColors.primary,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                dayLabels[day.date.weekday - 1],
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
