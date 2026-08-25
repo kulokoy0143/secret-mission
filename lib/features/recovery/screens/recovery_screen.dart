@@ -749,44 +749,68 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
           ...entries.map((entry) {
             final recovery = RecoveryService.calculateRecovery(entry);
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedDate = DateTime(
+                    entry.date.year,
+                    entry.date.month,
+                    entry.date.day,
+                  );
+                  _sleepMinutes = entry.sleepMinutes;
+                  _sleepQuality = entry.quality;
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _formatRecoveryDate(entry.date),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${entry.sleepHours.toStringAsFixed(1)}h • ${entry.quality}/5',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _formatRecoveryDate(entry.date),
+                          '${recovery.score}%',
                           style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${entry.sleepHours.toStringAsFixed(1)}h • ${entry.quality}/5',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                          ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: AppColors.textSecondary,
+                          size: 18,
                         ),
                       ],
                     ),
-                  ),
-
-                  Text(
-                    '${recovery.score}%',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            );
+                  ],
+                ), // Row
+              ), // Padding
+            ); // GestureDetector
           }),
         ],
       ),
