@@ -409,6 +409,17 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               letterSpacing: 0.8,
             ),
           ),
+          const SizedBox(height: 12),
+
+          Text(
+            recovery.trainingGuidance,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
         ],
       ),
     );
