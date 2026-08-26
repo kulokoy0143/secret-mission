@@ -31,4 +31,17 @@ class RecoveryStatus {
         return 'Recovery is excellent. Train as planned and push your normal working intensity.';
     }
   }
+
+  String get trainingPlan {
+    switch (level) {
+      case RecoveryLevel.low:
+        return 'Rest • Mobility • Light activity';
+      case RecoveryLevel.moderate:
+        return 'Reduce volume 20–30% • Avoid failure';
+      case RecoveryLevel.good:
+        return 'Normal training • Follow the plan';
+      case RecoveryLevel.excellent:
+        return 'Full planned training • Normal intensity';
+    }
+  }
 }
