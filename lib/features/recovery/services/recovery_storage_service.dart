@@ -17,6 +17,10 @@ class RecoveryStorageService {
     });
   }
 
+  static Future<void> deleteSleepEntry(DateTime date) async {
+    await _box.delete(_dateKey(date));
+  }
+
   static SleepEntry? getSleepEntry(DateTime date) {
     final data = _box.get(_dateKey(date));
 

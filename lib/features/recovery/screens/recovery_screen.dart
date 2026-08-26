@@ -63,6 +63,41 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
     setState(() {});
   }
 
+  Future<void> _deleteSelectedDateSleep() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete Sleep Log?'),
+          content: const Text(
+            'This will permanently remove the sleep log for this date.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('DELETE'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    await RecoveryStorageService.deleteSleepEntry(_selectedDate);
+
+    if (!mounted) return;
+
+    setState(() {
+      _sleepMinutes = 465;
+      _sleepQuality = 4;
+    });
+  }
+
   Future<void> _pickRecoveryDate() async {
     final pickedDate = await showDatePicker(
       context: context,
@@ -702,6 +737,28 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               ),
             ),
           ),
+          if (RecoveryStorageService.getSleepEntry(_selectedDate) != null) ...[
+            const SizedBox(height: 8),
+
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: _deleteSelectedDateSleep,
+                icon: const Icon(Icons.delete_outline_rounded, size: 19),
+                label: const Text(
+                  'DELETE SLEEP LOG',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.7,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.redAccent,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
