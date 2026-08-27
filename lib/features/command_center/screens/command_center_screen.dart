@@ -4,6 +4,8 @@ import 'package:secret_mission/features/training/screens/training_screen.dart';
 import 'package:secret_mission/features/history/screens/workout_history_screen.dart';
 import 'package:secret_mission/features/training/screens/workout_picker_screen.dart';
 import 'package:secret_mission/features/recovery/screens/recovery_screen.dart';
+import 'package:secret_mission/features/recovery/services/recovery_service.dart';
+import 'package:secret_mission/features/recovery/services/recovery_storage_service.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
@@ -91,6 +93,12 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   }
 
   Widget _buildDashboard() {
+    final todaySleep = RecoveryStorageService.getSleepEntry(DateTime.now());
+
+    final todayRecovery = todaySleep == null
+        ? null
+        : RecoveryService.calculateRecovery(todaySleep);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       child: Column(
@@ -164,8 +172,12 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 child: _buildMetricCard(
                   icon: Icons.bedtime_outlined,
                   title: 'Recovery',
-                  value: '91%',
-                  subtitle: 'Excellent',
+                  value: todayRecovery == null
+                      ? '--'
+                      : '${todayRecovery.score}%',
+                  subtitle: todayRecovery == null
+                      ? 'No log today'
+                      : todayRecovery.label,
                 ),
               ),
               const SizedBox(width: 12),
@@ -182,7 +194,10 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
           const SizedBox(height: 16),
 
-          _buildCommanderCard(),
+          _buildCommanderCard(
+            todayRecovery?.trainingGuidance ??
+                'Log today\'s sleep to receive recovery guidance.',
+          ),
         ],
       ),
     );
@@ -271,7 +286,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     );
   }
 
-  Widget _buildCommanderCard() {
+  Widget _buildCommanderCard(String message) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -280,7 +295,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
@@ -302,8 +317,11 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Your recovery looks excellent. You are ready for a strong Push Day session.',
-                  style: TextStyle(color: AppColors.textSecondary, height: 1.5),
+                  message,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
                 ),
               ],
             ),
