@@ -6,6 +6,7 @@ import 'package:secret_mission/features/training/screens/workout_picker_screen.d
 import 'package:secret_mission/features/recovery/screens/recovery_screen.dart';
 import 'package:secret_mission/features/recovery/services/recovery_service.dart';
 import 'package:secret_mission/features/recovery/services/recovery_storage_service.dart';
+import 'package:secret_mission/features/recovery/models/recovery_status.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
@@ -92,6 +93,23 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     );
   }
 
+  Color _missionStatusColor(RecoveryStatus? recovery) {
+    if (recovery == null) {
+      return AppColors.textSecondary;
+    }
+
+    switch (recovery.level) {
+      case RecoveryLevel.low:
+        return Colors.redAccent;
+      case RecoveryLevel.moderate:
+        return Colors.orangeAccent;
+      case RecoveryLevel.good:
+        return AppColors.success;
+      case RecoveryLevel.excellent:
+        return AppColors.success;
+    }
+  }
+
   Widget _buildDashboard() {
     final todaySleep = RecoveryStorageService.getSleepEntry(DateTime.now());
 
@@ -144,14 +162,20 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
           const SizedBox(height: 10),
 
-          const Row(
+          Row(
             children: [
-              Icon(Icons.circle, color: AppColors.success, size: 9),
-              SizedBox(width: 8),
+              Icon(
+                Icons.circle,
+                color: _missionStatusColor(todayRecovery),
+                size: 9,
+              ),
+              const SizedBox(width: 8),
               Text(
-                'MISSION STATUS: READY',
+                todayRecovery == null
+                    ? 'MISSION STATUS: AWAITING RECOVERY LOG'
+                    : 'MISSION STATUS: ${todayRecovery.label}',
                 style: TextStyle(
-                  color: AppColors.success,
+                  color: _missionStatusColor(todayRecovery),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
@@ -162,7 +186,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
           const SizedBox(height: 28),
 
-          _buildMissionCard(),
+          _buildMissionCard(todayRecovery?.trainingPlan),
 
           const SizedBox(height: 16),
 
@@ -203,7 +227,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     );
   }
 
-  Widget _buildMissionCard() {
+  Widget _buildMissionCard(String? trainingPlan) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
@@ -231,9 +255,10 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Chest • Shoulders • Triceps',
-            style: TextStyle(color: Colors.white70),
+          Text(
+            trainingPlan ??
+                'Log recovery data to personalize today\'s mission.',
+            style: const TextStyle(color: Colors.white70),
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
