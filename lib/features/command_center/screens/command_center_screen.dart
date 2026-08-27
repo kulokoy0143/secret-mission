@@ -186,7 +186,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
           const SizedBox(height: 28),
 
-          _buildMissionCard(todayRecovery?.trainingPlan),
+          _buildMissionCard(todayRecovery?.trainingPlan, todayRecovery),
 
           const SizedBox(height: 16),
 
@@ -202,6 +202,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                   subtitle: todayRecovery == null
                       ? 'No log today'
                       : todayRecovery.label,
+                  subtitleColor: _missionStatusColor(todayRecovery),
                 ),
               ),
               const SizedBox(width: 12),
@@ -227,7 +228,24 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     );
   }
 
-  Widget _buildMissionCard(String? trainingPlan) {
+  String _missionBadgeLabel(RecoveryStatus? recovery) {
+    if (recovery == null) {
+      return 'AWAITING RECOVERY';
+    }
+
+    switch (recovery.level) {
+      case RecoveryLevel.low:
+        return 'RECOVERY PRIORITY';
+      case RecoveryLevel.moderate:
+        return 'CAUTION';
+      case RecoveryLevel.good:
+        return 'READY';
+      case RecoveryLevel.excellent:
+        return 'MISSION READY';
+    }
+  }
+
+  Widget _buildMissionCard(String? trainingPlan, RecoveryStatus? recovery) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
@@ -240,27 +258,63 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "TODAY'S MISSION",
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-            ),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  "TODAY'S MISSION",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: _missionStatusColor(recovery).withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _missionStatusColor(
+                      recovery,
+                    ).withValues(alpha: 0.55),
+                  ),
+                ),
+                child: Text(
+                  _missionBadgeLabel(recovery),
+                  style: TextStyle(
+                    color: _missionStatusColor(recovery),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.7,
+                  ),
+                ),
+              ),
+            ],
           ),
+
           const SizedBox(height: 12),
+
           const Text(
             'Push Day',
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
           ),
+
           const SizedBox(height: 6),
+
           Text(
             trainingPlan ??
                 'Log recovery data to personalize today\'s mission.',
             style: const TextStyle(color: Colors.white70),
           ),
+
           const SizedBox(height: 24),
+
           FilledButton.icon(
             onPressed: _openWorkoutPicker,
             style: FilledButton.styleFrom(
@@ -283,6 +337,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     required String title,
     required String value,
     required String subtitle,
+    Color? subtitleColor,
   }) {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -295,16 +350,24 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: AppColors.primary),
+
           const SizedBox(height: 18),
+
           Text(title, style: const TextStyle(color: AppColors.textSecondary)),
+
           const SizedBox(height: 4),
+
           Text(
             value,
             style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
           ),
+
           Text(
             subtitle,
-            style: const TextStyle(color: AppColors.success, fontSize: 12),
+            style: TextStyle(
+              color: subtitleColor ?? AppColors.success,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -323,16 +386,18 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             backgroundColor: AppColors.primary,
             child: Icon(Icons.smart_toy_rounded, color: Colors.white),
           ),
-          SizedBox(width: 14),
+
+          const SizedBox(width: 14),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'COMMANDER',
                   style: TextStyle(
                     color: AppColors.primary,
@@ -340,7 +405,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                     letterSpacing: 1.2,
                   ),
                 ),
-                SizedBox(height: 8),
+
+                const SizedBox(height: 8),
+
                 Text(
                   message,
                   style: const TextStyle(
