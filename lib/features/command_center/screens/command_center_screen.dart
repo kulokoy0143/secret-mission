@@ -43,6 +43,12 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     });
   }
 
+  void _openRecovery() {
+    setState(() {
+      _selectedIndex = 3;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -401,25 +407,39 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                       _selectedIndex = 1;
                     });
                   }
+                : recovery?.level == RecoveryLevel.low
+                ? _openRecovery
                 : suggestedWorkoutType != null
                 ? () => _startSuggestedWorkout(suggestedWorkoutType)
                 : _openWorkoutPicker,
             style: FilledButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: AppColors.primary,
+              foregroundColor: recovery?.level == RecoveryLevel.low
+                  ? Colors.redAccent
+                  : AppColors.primary,
             ),
-            icon: const Icon(Icons.play_arrow_rounded),
+            icon: Icon(
+              workoutName != null
+                  ? Icons.play_arrow_rounded
+                  : recovery?.level == RecoveryLevel.low
+                  ? Icons.bedtime_rounded
+                  : Icons.play_arrow_rounded,
+            ),
             label: Text(
               workoutName != null
                   ? 'RESUME WORKOUT'
+                  : recovery?.level == RecoveryLevel.low
+                  ? 'VIEW RECOVERY'
                   : suggestedWorkoutType != null
-                  ? 'START ${suggestedWorkoutType.displayName.toUpperCase()}'
+                  ? recovery?.level == RecoveryLevel.moderate
+                        ? 'START LIGHT ${suggestedWorkoutType.displayName.toUpperCase()}'
+                        : 'START ${suggestedWorkoutType.displayName.toUpperCase()}'
                   : 'START WORKOUT',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
 
-          if (workoutName == null && suggestedWorkoutType != null) ...[
+          if (workoutName == null) ...[
             const SizedBox(height: 8),
 
             TextButton.icon(
