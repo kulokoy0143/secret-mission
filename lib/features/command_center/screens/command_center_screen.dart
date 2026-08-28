@@ -214,7 +214,14 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                   icon: Icons.local_fire_department_outlined,
                   title: 'Streak',
                   value: '$workoutStreak',
-                  subtitle: 'Days',
+                  subtitle: workoutStreak == 0
+                      ? 'Start a streak'
+                      : workoutStreak == 1
+                      ? 'Day'
+                      : 'Days',
+                  iconColor: workoutStreak > 0
+                      ? Colors.orangeAccent
+                      : AppColors.textSecondary,
                 ),
               ),
             ],
@@ -341,6 +348,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     required String value,
     required String subtitle,
     Color? subtitleColor,
+    Color? iconColor,
   }) {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -352,7 +360,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.primary),
+          Icon(icon, color: iconColor ?? AppColors.primary),
 
           const SizedBox(height: 18),
 
