@@ -8,6 +8,7 @@ import 'package:secret_mission/features/recovery/services/recovery_service.dart'
 import 'package:secret_mission/features/recovery/services/recovery_storage_service.dart';
 import 'package:secret_mission/features/recovery/models/recovery_status.dart';
 import 'package:secret_mission/features/training/services/workout_storage_service.dart';
+import 'package:secret_mission/features/training/services/session_manager.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
@@ -120,6 +121,8 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
     final workoutStreak = WorkoutStorageService.getCurrentWorkoutStreak();
 
+    final activeWorkout = SessionManager.activeWorkout;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       child: Column(
@@ -189,7 +192,11 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
           const SizedBox(height: 28),
 
-          _buildMissionCard(todayRecovery?.trainingPlan, todayRecovery),
+          _buildMissionCard(
+            todayRecovery?.trainingPlan,
+            todayRecovery,
+            activeWorkout?.name,
+          ),
 
           const SizedBox(height: 16),
 
@@ -220,6 +227,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                       ? 'Day'
                       : 'Days',
                   iconColor: workoutStreak > 0
+                      ? Colors.orangeAccent
+                      : AppColors.textSecondary,
+                  subtitleColor: workoutStreak > 0
                       ? Colors.orangeAccent
                       : AppColors.textSecondary,
                 ),
@@ -255,7 +265,11 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     }
   }
 
-  Widget _buildMissionCard(String? trainingPlan, RecoveryStatus? recovery) {
+  Widget _buildMissionCard(
+    String? trainingPlan,
+    RecoveryStatus? recovery,
+    String? workoutName,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
@@ -310,9 +324,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
           const SizedBox(height: 12),
 
-          const Text(
-            'Push Day',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+          Text(
+            workoutName ?? 'Choose Your Mission',
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
           ),
 
           const SizedBox(height: 6),
@@ -326,15 +340,21 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           const SizedBox(height: 24),
 
           FilledButton.icon(
-            onPressed: _openWorkoutPicker,
+            onPressed: workoutName == null
+                ? _openWorkoutPicker
+                : () {
+                    setState(() {
+                      _selectedIndex = 1;
+                    });
+                  },
             style: FilledButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: AppColors.primary,
             ),
             icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text(
-              'START WORKOUT',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            label: Text(
+              workoutName == null ? 'START WORKOUT' : 'RESUME WORKOUT',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ],
