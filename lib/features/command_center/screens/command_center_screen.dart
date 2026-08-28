@@ -126,6 +126,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
     final activeWorkoutFocus = activeWorkout?.type.muscleFocus;
 
+    final lastCompletedWorkoutName =
+        WorkoutStorageService.getLastCompletedWorkoutName();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       child: Column(
@@ -199,6 +202,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
             todayRecovery,
             activeWorkout?.name,
             activeWorkoutFocus,
+            lastCompletedWorkoutName,
           ),
 
           const SizedBox(height: 16),
@@ -272,6 +276,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     RecoveryStatus? recovery,
     String? workoutName,
     String? workoutFocus,
+    String? lastCompletedWorkoutName,
   ) {
     return Container(
       width: double.infinity,
@@ -328,16 +333,23 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           const SizedBox(height: 12),
 
           Text(
-            workoutName ?? 'Choose Your Mission',
+            workoutName ??
+                (lastCompletedWorkoutName == null
+                    ? 'Choose Your Mission'
+                    : 'Last Mission: $lastCompletedWorkoutName'),
             style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
           ),
 
           const SizedBox(height: 6),
 
           Text(
-            workoutFocus ?? 'Choose a workout to see its muscle focus.',
+            workoutFocus ??
+                (lastCompletedWorkoutName == null
+                    ? 'Choose a workout to see its muscle focus.'
+                    : 'Your most recently completed workout.'),
             style: const TextStyle(color: Colors.white70),
           ),
+
           const SizedBox(height: 24),
 
           FilledButton.icon(

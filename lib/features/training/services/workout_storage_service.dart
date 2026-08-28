@@ -43,6 +43,19 @@ class WorkoutStorageService {
     await _workoutBox.clear();
   }
 
+  /// Returns the name of the most recently completed workout.
+  ///
+  /// Returns null when there is no saved workout history.
+  static String? getLastCompletedWorkoutName() {
+    final sets = getAllSets();
+
+    if (sets.isEmpty) {
+      return null;
+    }
+
+    return sets.last.workoutName;
+  }
+
   /// Returns the current consecutive workout-day streak.
   ///
   /// A streak stays active if the most recent workout was today or yesterday.
