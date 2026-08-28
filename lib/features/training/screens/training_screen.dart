@@ -533,7 +533,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
           _buildExerciseHeader(),
           const SizedBox(height: 16),
 
-          _buildPreviousPerformance(),
+          _buildPreviousPerformance(todayRecovery),
           const SizedBox(height: 16),
 
           _buildSetLogger(),
@@ -684,20 +684,49 @@ class _TrainingScreenState extends State<TrainingScreen> {
     return bestSet;
   }
 
-  String _buildPreviousTarget(WorkoutSet previousSet) {
-    if (previousSet.reps >= 10) {
-      final increase = previousSet.unit == 'kg' ? 1.0 : 2.5;
-      final targetWeight = previousSet.weight + increase;
-
+  String _buildPreviousTarget(
+    WorkoutSet previousSet,
+    RecoveryStatus? recovery,
+  ) {
+    if (recovery == null) {
       return 'Suggested target: '
-          '${_formatNumber(targetWeight)} ${previousSet.unit} × 8–10 reps';
+          '${_formatNumber(previousSet.weight)} ${previousSet.unit} × '
+          '${previousSet.reps} reps';
     }
 
-    final targetReps = (previousSet.reps + 1).clamp(1, 10);
+    switch (recovery.level) {
+      case RecoveryLevel.low:
+        final reducedWeight = previousSet.weight * 0.9;
+        final targetReps = (previousSet.reps - 2).clamp(6, 10);
 
-    return 'Suggested target: '
-        '${_formatNumber(previousSet.weight)} ${previousSet.unit} × '
-        '$targetReps reps';
+        return 'Recovery target: '
+            '${_formatNumber(reducedWeight)} ${previousSet.unit} × '
+            '$targetReps reps';
+
+      case RecoveryLevel.moderate:
+        final targetReps = previousSet.reps.clamp(6, 10);
+
+        return 'Light target: '
+            '${_formatNumber(previousSet.weight)} ${previousSet.unit} × '
+            '$targetReps reps';
+
+      case RecoveryLevel.good:
+      case RecoveryLevel.excellent:
+        if (previousSet.reps >= 10) {
+          final increase = previousSet.unit == 'kg' ? 1.0 : 2.5;
+          final targetWeight = previousSet.weight + increase;
+
+          return 'Suggested target: '
+              '${_formatNumber(targetWeight)} ${previousSet.unit} × '
+              '8–10 reps';
+        }
+
+        final targetReps = (previousSet.reps + 1).clamp(1, 10);
+
+        return 'Suggested target: '
+            '${_formatNumber(previousSet.weight)} ${previousSet.unit} × '
+            '$targetReps reps';
+    }
   }
 
   String _formatShortDate(DateTime date) {
@@ -719,7 +748,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
     return '${months[date.month - 1]} ${date.day}';
   }
 
-  Widget _buildPreviousPerformance() {
+  Widget _buildPreviousPerformance(RecoveryStatus? recovery) {
     final previousSets = _getPreviousExerciseSessionSets();
     final bestSet = _getPreviousBestSet(previousSets);
 
@@ -802,9 +831,9 @@ class _TrainingScreenState extends State<TrainingScreen> {
           const SizedBox(height: 8),
 
           Text(
-            _buildPreviousTarget(bestSet),
-            style: const TextStyle(
-              color: AppColors.success,
+            _buildPreviousTarget(bestSet, recovery),
+            style: TextStyle(
+              color: _recoveryColor(recovery),
               fontWeight: FontWeight.w600,
             ),
           ),
