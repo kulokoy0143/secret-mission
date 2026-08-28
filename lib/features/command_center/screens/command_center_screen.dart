@@ -113,6 +113,25 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     }
   }
 
+  WorkoutType? _suggestNextWorkoutType(String? lastWorkoutName) {
+    switch (lastWorkoutName) {
+      case 'Push Day':
+        return WorkoutType.pull;
+      case 'Pull Day':
+        return WorkoutType.legs;
+      case 'Leg Day':
+        return WorkoutType.push;
+      case 'Upper Body':
+        return WorkoutType.lower;
+      case 'Lower Body':
+        return WorkoutType.upper;
+      case 'Full Body':
+        return WorkoutType.fullBody;
+      default:
+        return null;
+    }
+  }
+
   Widget _buildDashboard() {
     final todaySleep = RecoveryStorageService.getSleepEntry(DateTime.now());
 
@@ -128,6 +147,12 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
     final lastCompletedWorkoutName =
         WorkoutStorageService.getLastCompletedWorkoutName();
+    final suggestedWorkoutType = activeWorkout == null
+        ? _suggestNextWorkoutType(lastCompletedWorkoutName)
+        : null;
+
+    final suggestedWorkoutName = suggestedWorkoutType?.displayName;
+    final suggestedWorkoutFocus = suggestedWorkoutType?.muscleFocus;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -203,6 +228,8 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
             activeWorkout?.name,
             activeWorkoutFocus,
             lastCompletedWorkoutName,
+            suggestedWorkoutName,
+            suggestedWorkoutFocus,
           ),
 
           const SizedBox(height: 16),
@@ -277,6 +304,8 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     String? workoutName,
     String? workoutFocus,
     String? lastCompletedWorkoutName,
+    String? suggestedWorkoutName,
+    String? suggestedWorkoutFocus,
   ) {
     return Container(
       width: double.infinity,
@@ -334,7 +363,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
           Text(
             workoutName ??
-                (lastCompletedWorkoutName == null
+                (suggestedWorkoutName != null
+                    ? 'Suggested: $suggestedWorkoutName'
+                    : lastCompletedWorkoutName == null
                     ? 'Choose Your Mission'
                     : 'Last Mission: $lastCompletedWorkoutName'),
             style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
@@ -344,9 +375,10 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
           Text(
             workoutFocus ??
+                suggestedWorkoutFocus ??
                 (lastCompletedWorkoutName == null
                     ? 'Choose a workout to see its muscle focus.'
-                    : 'Your most recently completed workout.'),
+                    : 'Choose your next training mission.'),
             style: const TextStyle(color: Colors.white70),
           ),
 
