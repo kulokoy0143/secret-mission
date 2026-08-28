@@ -9,6 +9,7 @@ import 'package:secret_mission/features/recovery/services/recovery_storage_servi
 import 'package:secret_mission/features/recovery/models/recovery_status.dart';
 import 'package:secret_mission/features/training/services/workout_storage_service.dart';
 import 'package:secret_mission/features/training/services/session_manager.dart';
+import 'package:secret_mission/features/training/models/active_workout.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
@@ -123,6 +124,8 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
     final activeWorkout = SessionManager.activeWorkout;
 
+    final activeWorkoutFocus = activeWorkout?.type.muscleFocus;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       child: Column(
@@ -193,9 +196,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           const SizedBox(height: 28),
 
           _buildMissionCard(
-            todayRecovery?.trainingPlan,
             todayRecovery,
             activeWorkout?.name,
+            activeWorkoutFocus,
           ),
 
           const SizedBox(height: 16),
@@ -266,9 +269,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   }
 
   Widget _buildMissionCard(
-    String? trainingPlan,
     RecoveryStatus? recovery,
     String? workoutName,
+    String? workoutFocus,
   ) {
     return Container(
       width: double.infinity,
@@ -332,11 +335,9 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           const SizedBox(height: 6),
 
           Text(
-            trainingPlan ??
-                'Log recovery data to personalize today\'s mission.',
+            workoutFocus ?? 'Choose a workout to see its muscle focus.',
             style: const TextStyle(color: Colors.white70),
           ),
-
           const SizedBox(height: 24),
 
           FilledButton.icon(

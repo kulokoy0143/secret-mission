@@ -1,12 +1,4 @@
-enum WorkoutType {
-  push,
-  pull,
-  legs,
-  upper,
-  lower,
-  fullBody,
-  custom,
-}
+enum WorkoutType { push, pull, legs, upper, lower, fullBody, custom }
 
 extension WorkoutTypeDetails on WorkoutType {
   String get displayName {
@@ -25,6 +17,25 @@ extension WorkoutTypeDetails on WorkoutType {
         return 'Full Body';
       case WorkoutType.custom:
         return 'Custom Workout';
+    }
+  }
+
+  String get muscleFocus {
+    switch (this) {
+      case WorkoutType.push:
+        return 'Chest • Shoulders • Triceps';
+      case WorkoutType.pull:
+        return 'Back • Rear Delts • Biceps';
+      case WorkoutType.legs:
+        return 'Quads • Hamstrings • Glutes • Calves';
+      case WorkoutType.upper:
+        return 'Chest • Back • Shoulders • Arms';
+      case WorkoutType.lower:
+        return 'Quads • Hamstrings • Glutes • Calves';
+      case WorkoutType.fullBody:
+        return 'Full Body • Strength • Core';
+      case WorkoutType.custom:
+        return 'Custom Training Mission';
     }
   }
 }
