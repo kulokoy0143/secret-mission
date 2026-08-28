@@ -7,6 +7,7 @@ import 'package:secret_mission/features/recovery/screens/recovery_screen.dart';
 import 'package:secret_mission/features/recovery/services/recovery_service.dart';
 import 'package:secret_mission/features/recovery/services/recovery_storage_service.dart';
 import 'package:secret_mission/features/recovery/models/recovery_status.dart';
+import 'package:secret_mission/features/training/services/workout_storage_service.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
@@ -117,6 +118,8 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
         ? null
         : RecoveryService.calculateRecovery(todaySleep);
 
+    final workoutStreak = WorkoutStorageService.getCurrentWorkoutStreak();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       child: Column(
@@ -210,7 +213,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 child: _buildMetricCard(
                   icon: Icons.local_fire_department_outlined,
                   title: 'Streak',
-                  value: '12',
+                  value: '$workoutStreak',
                   subtitle: 'Days',
                 ),
               ),

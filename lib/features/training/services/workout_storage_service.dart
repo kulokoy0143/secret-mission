@@ -43,6 +43,57 @@ class WorkoutStorageService {
     await _workoutBox.clear();
   }
 
+  /// Returns the current consecutive workout-day streak.
+  ///
+  /// A streak stays active if the most recent workout was today or yesterday.
+  static int getCurrentWorkoutStreak() {
+    final sets = getAllSets();
+
+    if (sets.isEmpty) {
+      return 0;
+    }
+
+    final workoutDates =
+        sets
+            .map(
+              (set) => DateTime(
+                set.completedAt.year,
+                set.completedAt.month,
+                set.completedAt.day,
+              ),
+            )
+            .toSet()
+            .toList()
+          ..sort((a, b) => b.compareTo(a));
+
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+
+    final mostRecentWorkout = workoutDates.first;
+
+    final daysSinceLastWorkout = normalizedToday
+        .difference(mostRecentWorkout)
+        .inDays;
+
+    if (daysSinceLastWorkout > 1) {
+      return 0;
+    }
+
+    var streak = 1;
+    var expectedDate = mostRecentWorkout.subtract(const Duration(days: 1));
+
+    for (final workoutDate in workoutDates.skip(1)) {
+      if (workoutDate == expectedDate) {
+        streak++;
+        expectedDate = expectedDate.subtract(const Duration(days: 1));
+      } else if (workoutDate.isBefore(expectedDate)) {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
   /// Returns the total number of sets saved in Hive.
   static int get savedSetCount => _workoutBox.length;
 }
