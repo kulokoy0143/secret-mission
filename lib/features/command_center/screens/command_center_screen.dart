@@ -35,6 +35,14 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     );
   }
 
+  void _startSuggestedWorkout(WorkoutType type) {
+    SessionManager.startWorkout(type: type);
+
+    setState(() {
+      _selectedIndex = 1;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -230,6 +238,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
             lastCompletedWorkoutName,
             suggestedWorkoutName,
             suggestedWorkoutFocus,
+            suggestedWorkoutType,
           ),
 
           const SizedBox(height: 16),
@@ -306,6 +315,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     String? lastCompletedWorkoutName,
     String? suggestedWorkoutName,
     String? suggestedWorkoutFocus,
+    WorkoutType? suggestedWorkoutType,
   ) {
     return Container(
       width: double.infinity,
@@ -385,23 +395,43 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
           const SizedBox(height: 24),
 
           FilledButton.icon(
-            onPressed: workoutName == null
-                ? _openWorkoutPicker
-                : () {
+            onPressed: workoutName != null
+                ? () {
                     setState(() {
                       _selectedIndex = 1;
                     });
-                  },
+                  }
+                : suggestedWorkoutType != null
+                ? () => _startSuggestedWorkout(suggestedWorkoutType)
+                : _openWorkoutPicker,
             style: FilledButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: AppColors.primary,
             ),
             icon: const Icon(Icons.play_arrow_rounded),
             label: Text(
-              workoutName == null ? 'START WORKOUT' : 'RESUME WORKOUT',
+              workoutName != null
+                  ? 'RESUME WORKOUT'
+                  : suggestedWorkoutType != null
+                  ? 'START ${suggestedWorkoutType.displayName.toUpperCase()}'
+                  : 'START WORKOUT',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
+
+          if (workoutName == null && suggestedWorkoutType != null) ...[
+            const SizedBox(height: 8),
+
+            TextButton.icon(
+              onPressed: _openWorkoutPicker,
+              style: TextButton.styleFrom(foregroundColor: Colors.white70),
+              icon: const Icon(Icons.swap_horiz_rounded, size: 19),
+              label: const Text(
+                'CHOOSE WORKOUT',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
         ],
       ),
     );
