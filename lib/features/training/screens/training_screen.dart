@@ -748,6 +748,51 @@ class _TrainingScreenState extends State<TrainingScreen> {
     return '${months[date.month - 1]} ${date.day}';
   }
 
+  Widget _buildPreviousSetRow(WorkoutSet set) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '${set.setNumber}',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Text(
+              '${_formatNumber(set.weight)} ${set.unit} × '
+              '${set.reps} reps',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ),
+
+          Text(
+            _formatNumber(set.volume),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPreviousPerformance(RecoveryStatus? recovery) {
     final previousSets = _getPreviousExerciseSessionSets();
     final bestSet = _getPreviousBestSet(previousSets);
@@ -807,28 +852,67 @@ class _TrainingScreenState extends State<TrainingScreen> {
             ),
           ),
 
-          const SizedBox(height: 10),
-
-          Text(
-            '${_formatNumber(bestSet.weight)} ${bestSet.unit} × '
-            '${bestSet.reps} reps',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-          ),
-
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
 
           Text(
             '${bestSet.workoutName} • '
-            '${_formatShortDate(bestSet.completedAt)} • '
-            '${previousSets.length} '
-            '${previousSets.length == 1 ? 'set' : 'sets'}',
-            style: const TextStyle(
+            '${_formatShortDate(bestSet.completedAt)}',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+
+          const SizedBox(height: 16),
+
+          const Text(
+            'PREVIOUS SETS',
+            style: TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 12,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
             ),
           ),
 
+          const SizedBox(height: 10),
+
+          ...previousSets.map(_buildPreviousSetRow),
+
           const SizedBox(height: 8),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'BEST SET',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+
+                const SizedBox(height: 5),
+
+                Text(
+                  '${_formatNumber(bestSet.weight)} ${bestSet.unit} × '
+                  '${bestSet.reps} reps',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
 
           Text(
             _buildPreviousTarget(bestSet, recovery),
@@ -861,12 +945,16 @@ class _TrainingScreenState extends State<TrainingScreen> {
               letterSpacing: 1.4,
             ),
           ),
+
           const SizedBox(height: 18),
+
           const Text(
             'Weight',
             style: TextStyle(color: AppColors.textSecondary),
           ),
+
           const SizedBox(height: 8),
+
           Row(
             children: [
               Expanded(
@@ -886,7 +974,9 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(width: 10),
+
               IconButton.filled(
                 onPressed: _toggleWeightUnit,
                 tooltip: 'Convert kg and lb',
@@ -894,9 +984,13 @@ class _TrainingScreenState extends State<TrainingScreen> {
               ),
             ],
           ),
+
           const SizedBox(height: 18),
+
           const Text('Reps', style: TextStyle(color: AppColors.textSecondary)),
+
           const SizedBox(height: 8),
+
           TextField(
             controller: _repsController,
             keyboardType: TextInputType.number,
@@ -910,7 +1004,9 @@ class _TrainingScreenState extends State<TrainingScreen> {
               ),
             ),
           ),
+
           const SizedBox(height: 20),
+
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
