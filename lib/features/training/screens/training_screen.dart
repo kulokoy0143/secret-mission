@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:secret_mission/app/app_theme.dart';
+import 'package:secret_mission/features/recovery/models/recovery_status.dart';
+import 'package:secret_mission/features/recovery/services/recovery_service.dart';
+import 'package:secret_mission/features/recovery/services/recovery_storage_service.dart';
 import 'package:secret_mission/features/training/screens/exercise_guide_screen.dart';
 import 'package:secret_mission/features/training/models/workout_set.dart';
 import 'package:secret_mission/features/training/services/workout_storage_service.dart';
@@ -402,9 +405,102 @@ class _TrainingScreenState extends State<TrainingScreen> {
     });
   }
 
+  Color _recoveryColor(RecoveryStatus? recovery) {
+    if (recovery == null) {
+      return AppColors.textSecondary;
+    }
+
+    switch (recovery.level) {
+      case RecoveryLevel.low:
+        return Colors.redAccent;
+      case RecoveryLevel.moderate:
+        return Colors.orangeAccent;
+      case RecoveryLevel.good:
+        return AppColors.success;
+      case RecoveryLevel.excellent:
+        return AppColors.success;
+    }
+  }
+
+  Widget _buildRecoveryGuidanceCard(RecoveryStatus? recovery) {
+    final color = _recoveryColor(recovery);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: color.withValues(alpha: 0.30),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            margin: const EdgeInsets.only(top: 4),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'RECOVERY GUIDANCE',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  recovery == null
+                      ? 'AWAITING RECOVERY LOG'
+                      : '${recovery.label} • ${recovery.score}%',
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.7,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  recovery?.trainingPlan ??
+                      'Log today\'s sleep to receive training guidance.',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeWorkout = SessionManager.activeWorkout;
+
+    final todaySleep = RecoveryStorageService.getSleepEntry(DateTime.now());
+
+    final todayRecovery = todaySleep == null
+        ? null
+        : RecoveryService.calculateRecovery(todaySleep);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       child: Column(
@@ -431,6 +527,12 @@ class _TrainingScreenState extends State<TrainingScreen> {
                 : 'Press START WORKOUT to begin',
             style: const TextStyle(color: AppColors.textSecondary),
           ),
+
+          if (activeWorkout != null) ...[
+            const SizedBox(height: 16),
+            _buildRecoveryGuidanceCard(todayRecovery),
+          ],
+
           const SizedBox(height: 28),
 
           _buildExerciseHeader(),
