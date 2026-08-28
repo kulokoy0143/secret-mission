@@ -431,9 +431,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: color.withValues(alpha: 0.30),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,10 +440,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
             width: 10,
             height: 10,
             margin: const EdgeInsets.only(top: 4),
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -628,7 +623,141 @@ class _TrainingScreenState extends State<TrainingScreen> {
     );
   }
 
+  List<WorkoutSet> _getPreviousExerciseSessionSets() {
+    final activeWorkout = SessionManager.activeWorkout;
+
+    if (activeWorkout == null) {
+      return [];
+    }
+
+    final previousSets = WorkoutStorageService.getAllSets().where((set) {
+      return set.exerciseName == _currentExerciseName &&
+          set.sessionId != activeWorkout.sessionId;
+    }).toList();
+
+    if (previousSets.isEmpty) {
+      return [];
+    }
+
+    final latestPreviousSet = previousSets.last;
+    final previousSessionId = latestPreviousSet.sessionId;
+
+    if (previousSessionId != null) {
+      return previousSets.where((set) {
+        return set.sessionId == previousSessionId;
+      }).toList();
+    }
+
+    final previousDate = DateTime(
+      latestPreviousSet.completedAt.year,
+      latestPreviousSet.completedAt.month,
+      latestPreviousSet.completedAt.day,
+    );
+
+    return previousSets.where((set) {
+      final setDate = DateTime(
+        set.completedAt.year,
+        set.completedAt.month,
+        set.completedAt.day,
+      );
+
+      return set.sessionId == null &&
+          set.workoutName == latestPreviousSet.workoutName &&
+          setDate == previousDate;
+    }).toList();
+  }
+
+  WorkoutSet? _getPreviousBestSet(List<WorkoutSet> sets) {
+    if (sets.isEmpty) {
+      return null;
+    }
+
+    WorkoutSet bestSet = sets.first;
+
+    for (final set in sets.skip(1)) {
+      if (set.volume > bestSet.volume ||
+          (set.volume == bestSet.volume && set.weight > bestSet.weight)) {
+        bestSet = set;
+      }
+    }
+
+    return bestSet;
+  }
+
+  String _buildPreviousTarget(WorkoutSet previousSet) {
+    if (previousSet.reps >= 10) {
+      final increase = previousSet.unit == 'kg' ? 1.0 : 2.5;
+      final targetWeight = previousSet.weight + increase;
+
+      return 'Suggested target: '
+          '${_formatNumber(targetWeight)} ${previousSet.unit} × 8–10 reps';
+    }
+
+    final targetReps = (previousSet.reps + 1).clamp(1, 10);
+
+    return 'Suggested target: '
+        '${_formatNumber(previousSet.weight)} ${previousSet.unit} × '
+        '$targetReps reps';
+  }
+
+  String _formatShortDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return '${months[date.month - 1]} ${date.day}';
+  }
+
   Widget _buildPreviousPerformance() {
+    final previousSets = _getPreviousExerciseSessionSets();
+    final bestSet = _getPreviousBestSet(previousSets);
+
+    if (bestSet == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'LAST SESSION',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.4,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'No previous performance',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Complete this exercise to establish your baseline.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -636,10 +765,10 @@ class _TrainingScreenState extends State<TrainingScreen> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'LAST SESSION',
             style: TextStyle(
               color: AppColors.textSecondary,
@@ -648,15 +777,36 @@ class _TrainingScreenState extends State<TrainingScreen> {
               letterSpacing: 1.4,
             ),
           ),
-          SizedBox(height: 10),
+
+          const SizedBox(height: 10),
+
           Text(
-            '40 lb × 10 reps',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            '${_formatNumber(bestSet.weight)} ${bestSet.unit} × '
+            '${bestSet.reps} reps',
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
           ),
-          SizedBox(height: 4),
+
+          const SizedBox(height: 4),
+
           Text(
-            'Recommended target: 42.5 lb × 8 reps',
-            style: TextStyle(color: AppColors.success),
+            '${bestSet.workoutName} • '
+            '${_formatShortDate(bestSet.completedAt)} • '
+            '${previousSets.length} '
+            '${previousSets.length == 1 ? 'set' : 'sets'}',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            _buildPreviousTarget(bestSet),
+            style: const TextStyle(
+              color: AppColors.success,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
