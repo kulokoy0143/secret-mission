@@ -10,6 +10,7 @@ import 'package:secret_mission/features/recovery/models/recovery_status.dart';
 import 'package:secret_mission/features/training/services/workout_storage_service.dart';
 import 'package:secret_mission/features/training/services/session_manager.dart';
 import 'package:secret_mission/features/training/models/active_workout.dart';
+import 'package:secret_mission/features/training/models/workout_set.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
@@ -146,6 +147,68 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     }
   }
 
+  bool _isSameStoredWorkoutSession(WorkoutSet first, WorkoutSet second) {
+    if (first.sessionId != null || second.sessionId != null) {
+      return first.sessionId != null &&
+          second.sessionId != null &&
+          first.sessionId == second.sessionId;
+    }
+
+    return first.workoutName == second.workoutName &&
+        first.completedAt.year == second.completedAt.year &&
+        first.completedAt.month == second.completedAt.month &&
+        first.completedAt.day == second.completedAt.day;
+  }
+
+  bool _isHistoricalPersonalRecord(WorkoutSet targetSet) {
+    final allSets = WorkoutStorageService.getAllSets();
+
+    final previousSets = allSets.where((set) {
+      return set.exerciseName == targetSet.exerciseName &&
+          set.completedAt.isBefore(targetSet.completedAt) &&
+          !_isSameStoredWorkoutSession(set, targetSet);
+    }).toList();
+
+    if (previousSets.isEmpty) {
+      return false;
+    }
+
+    final latestPreviousSet = previousSets.last;
+
+    final previousSessionSets = previousSets.where((set) {
+      return _isSameStoredWorkoutSession(set, latestPreviousSet);
+    }).toList();
+
+    if (previousSessionSets.isEmpty) {
+      return false;
+    }
+
+    WorkoutSet previousBest = previousSessionSets.first;
+
+    for (final set in previousSessionSets.skip(1)) {
+      if (set.volume > previousBest.volume ||
+          (set.volume == previousBest.volume &&
+              set.weight > previousBest.weight)) {
+        previousBest = set;
+      }
+    }
+
+    if (targetSet.volume > previousBest.volume) {
+      return true;
+    }
+
+    return targetSet.volume == previousBest.volume &&
+        targetSet.weight > previousBest.weight;
+  }
+
+  String _formatNumber(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toStringAsFixed(0);
+    }
+
+    return value.toStringAsFixed(1);
+  }
+
   Widget _buildDashboard() {
     final todaySleep = RecoveryStorageService.getSleepEntry(DateTime.now());
 
@@ -167,6 +230,20 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
 
     final suggestedWorkoutName = suggestedWorkoutType?.displayName;
     final suggestedWorkoutFocus = suggestedWorkoutType?.muscleFocus;
+
+    final now = DateTime.now();
+
+    final monthlyPersonalRecords = WorkoutStorageService.getAllSets().where((
+      set,
+    ) {
+      return set.completedAt.year == now.year &&
+          set.completedAt.month == now.month &&
+          _isHistoricalPersonalRecord(set);
+    }).toList();
+
+    final latestPersonalRecord = monthlyPersonalRecords.isEmpty
+        ? null
+        : monthlyPersonalRecords.last;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -284,6 +361,13 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 ),
               ),
             ],
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildPersonalRecordsCard(
+            personalRecordCount: monthlyPersonalRecords.length,
+            latestPersonalRecord: latestPersonalRecord,
           ),
 
           const SizedBox(height: 16),
@@ -493,6 +577,101 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
             style: TextStyle(
               color: subtitleColor ?? AppColors.success,
               fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalRecordsCard({
+    required int personalRecordCount,
+    required WorkoutSet? latestPersonalRecord,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.20)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.emoji_events_rounded, color: Colors.amber),
+          ),
+
+          const SizedBox(width: 14),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PERSONAL RECORDS',
+                  style: TextStyle(
+                    color: Colors.amber,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+
+                const SizedBox(height: 7),
+
+                Text(
+                  personalRecordCount == 0
+                      ? 'No PRs this month'
+                      : personalRecordCount == 1
+                      ? '1 PR this month'
+                      : '$personalRecordCount PRs this month',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+
+                const SizedBox(height: 5),
+
+                if (latestPersonalRecord == null)
+                  const Text(
+                    'Keep building your baseline and pushing your progression.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  )
+                else ...[
+                  Text(
+                    'Latest PR: ${latestPersonalRecord.exerciseName}',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+
+                  const SizedBox(height: 3),
+
+                  Text(
+                    '${_formatNumber(latestPersonalRecord.weight)} '
+                    '${latestPersonalRecord.unit} × '
+                    '${latestPersonalRecord.reps} reps',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
