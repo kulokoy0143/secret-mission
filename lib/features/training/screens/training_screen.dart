@@ -55,6 +55,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 
   int _currentExerciseIndex = 0;
+  String? _preparedSessionId;
 
   WorkoutPlan? get _currentPlan {
     final activeWorkout = SessionManager.activeWorkout;
@@ -377,12 +378,10 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
     setState(() {
       _currentExerciseIndex++;
-
-      _loadWorkoutHistory();
-
-      _weightController.text = '40';
-      _repsController.text = '10';
     });
+
+    _loadWorkoutHistory();
+    _applySuggestedTargetToInputs();
   }
 
   void _previousExercise() {
@@ -395,6 +394,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
     });
 
     _loadWorkoutHistory();
+    _applySuggestedTargetToInputs();
 
     _restTimer?.cancel();
 
@@ -489,6 +489,22 @@ class _TrainingScreenState extends State<TrainingScreen> {
   @override
   Widget build(BuildContext context) {
     final activeWorkout = SessionManager.activeWorkout;
+
+    if (activeWorkout == null) {
+      _preparedSessionId = null;
+    } else if (_preparedSessionId != activeWorkout.sessionId) {
+      _preparedSessionId = activeWorkout.sessionId;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        _currentExerciseIndex = 0;
+        _loadWorkoutHistory();
+        _applySuggestedTargetToInputs();
+
+        setState(() {});
+      });
+    }
 
     final todaySleep = RecoveryStorageService.getSleepEntry(DateTime.now());
 
@@ -684,6 +700,93 @@ class _TrainingScreenState extends State<TrainingScreen> {
     return bestSet;
   }
 
+  ({double weight, int reps})? _getSuggestedInputTarget(
+    WorkoutSet previousSet,
+    RecoveryStatus? recovery,
+  ) {
+    if (recovery == null) {
+      return (weight: previousSet.weight, reps: previousSet.reps);
+    }
+
+    switch (recovery.level) {
+      case RecoveryLevel.low:
+        return (
+          weight: previousSet.weight * 0.9,
+          reps: (previousSet.reps - 2).clamp(6, 10).toInt(),
+        );
+
+      case RecoveryLevel.moderate:
+        return (
+          weight: previousSet.weight,
+          reps: previousSet.reps.clamp(6, 10).toInt(),
+        );
+
+      case RecoveryLevel.good:
+      case RecoveryLevel.excellent:
+        if (previousSet.reps >= 10) {
+          return (
+            weight: previousSet.weight + (previousSet.unit == 'kg' ? 1.0 : 2.5),
+            reps: 8,
+          );
+        }
+
+        return (
+          weight: previousSet.weight,
+          reps: (previousSet.reps + 1).clamp(1, 10).toInt(),
+        );
+    }
+  }
+
+  void _applySuggestedTargetToInputs() {
+    final activeWorkout = SessionManager.activeWorkout;
+
+    if (activeWorkout == null) {
+      return;
+    }
+
+    final allSets = WorkoutStorageService.getAllSets();
+
+    final currentSessionSets = allSets.where((set) {
+      return set.sessionId == activeWorkout.sessionId &&
+          set.exerciseName == _currentExerciseName;
+    }).toList();
+
+    if (currentSessionSets.isNotEmpty) {
+      final latestSet = currentSessionSets.last;
+
+      _usesKilograms = latestSet.unit == 'kg';
+      _weightController.text = _formatNumber(latestSet.weight);
+      _repsController.text = '${latestSet.reps}';
+      return;
+    }
+
+    final previousSets = _getPreviousExerciseSessionSets();
+    final bestSet = _getPreviousBestSet(previousSets);
+
+    if (bestSet == null) {
+      _usesKilograms = false;
+      _weightController.text = '40';
+      _repsController.text = '10';
+      return;
+    }
+
+    final todaySleep = RecoveryStorageService.getSleepEntry(DateTime.now());
+
+    final recovery = todaySleep == null
+        ? null
+        : RecoveryService.calculateRecovery(todaySleep);
+
+    final target = _getSuggestedInputTarget(bestSet, recovery);
+
+    if (target == null) {
+      return;
+    }
+
+    _usesKilograms = bestSet.unit == 'kg';
+    _weightController.text = _formatNumber(target.weight);
+    _repsController.text = '${target.reps}';
+  }
+
   String _buildPreviousTarget(
     WorkoutSet previousSet,
     RecoveryStatus? recovery,
@@ -714,6 +817,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
       case RecoveryLevel.excellent:
         if (previousSet.reps >= 10) {
           final increase = previousSet.unit == 'kg' ? 1.0 : 2.5;
+
           final targetWeight = previousSet.weight + increase;
 
           return 'Suggested target: '
@@ -795,6 +899,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
   Widget _buildPreviousPerformance(RecoveryStatus? recovery) {
     final previousSets = _getPreviousExerciseSessionSets();
+
     final bestSet = _getPreviousBestSet(previousSets);
 
     if (bestSet == null) {
@@ -817,12 +922,16 @@ class _TrainingScreenState extends State<TrainingScreen> {
                 letterSpacing: 1.4,
               ),
             ),
+
             SizedBox(height: 10),
+
             Text(
               'No previous performance',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
             ),
+
             SizedBox(height: 4),
+
             Text(
               'Complete this exercise to establish your baseline.',
               style: TextStyle(color: AppColors.textSecondary),
@@ -901,7 +1010,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
                 const SizedBox(height: 5),
 
                 Text(
-                  '${_formatNumber(bestSet.weight)} ${bestSet.unit} × '
+                  '${_formatNumber(bestSet.weight)} '
+                  '${bestSet.unit} × '
                   '${bestSet.reps} reps',
                   style: const TextStyle(
                     fontSize: 18,
