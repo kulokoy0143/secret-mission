@@ -683,9 +683,14 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     );
   }
 
+  int _countPersonalRecordsForSession(WorkoutSession session) {
+    return session.sets.where(_isHistoricalPersonalRecord).length;
+  }
+
   Widget _buildSessionCard(WorkoutSession session) {
     final exercises = session.setsByExercise;
     final isExpanded = _expandedSessionIds.contains(session.sessionId);
+    final personalRecordCount = _countPersonalRecordsForSession(session);
 
     return InkWell(
       onTap: () {
@@ -729,12 +734,60 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _formatSessionTitle(session),
-                        style: const TextStyle(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _formatSessionTitle(session),
+                              style: const TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+
+                          if (personalRecordCount > 0) ...[
+                            const SizedBox(width: 8),
+
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.amber.withValues(alpha: 0.45),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.emoji_events_rounded,
+                                    color: Colors.amber,
+                                    size: 13,
+                                  ),
+
+                                  const SizedBox(width: 4),
+
+                                  Text(
+                                    personalRecordCount == 1
+                                        ? '1 PR'
+                                        : '$personalRecordCount PRs',
+                                    style: const TextStyle(
+                                      color: Colors.amber,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 5),
                       Text(
