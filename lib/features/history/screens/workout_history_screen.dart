@@ -64,6 +64,12 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
             (total, session) => total + session.totalSets,
           );
 
+          final monthlyPersonalRecordCount = monthlySessions.fold<int>(
+            0,
+            (total, session) =>
+                total + session.sets.where(_isHistoricalPersonalRecord).length,
+          );
+
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
             children: [
@@ -74,6 +80,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                 missions: monthlyMissionCount,
                 exercises: monthlyExerciseCount,
                 sets: monthlySetCount,
+                personalRecords: monthlyPersonalRecordCount,
               ),
 
               const SizedBox(height: 16),
@@ -155,6 +162,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     required int missions,
     required int exercises,
     required int sets,
+    required int personalRecords,
   }) {
     return Container(
       width: double.infinity,
@@ -195,6 +203,12 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
               ),
               Expanded(
                 child: _buildIntelStat(value: sets.toString(), label: 'SETS'),
+              ),
+              Expanded(
+                child: _buildIntelStat(
+                  value: personalRecords.toString(),
+                  label: 'PRs',
+                ),
               ),
             ],
           ),
