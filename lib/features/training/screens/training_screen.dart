@@ -182,6 +182,10 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
     final unit = _usesKilograms ? 'kg' : 'lb';
 
+    final previousSessionSets = _getPreviousExerciseSessionSets();
+
+    final previousBest = _getPreviousBestSet(previousSessionSets);
+
     final workoutSet = WorkoutSet(
       exerciseName: _currentExerciseName,
       setNumber: _currentSetNumber,
@@ -193,6 +197,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
       workoutName: activeWorkout.name,
     );
 
+    final isPersonalRecord = _isPersonalRecord(workoutSet, previousBest);
+
     await WorkoutStorageService.saveSet(workoutSet);
 
     if (!mounted) return;
@@ -201,12 +207,37 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
     FocusScope.of(context).unfocus();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Set saved: ${_formatNumber(weight)} $unit × $reps reps'),
-      ),
-    );
-
+    if (isPersonalRecord && previousBest != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 4),
+          content: Row(
+            children: [
+              const Icon(Icons.emoji_events_rounded, color: Colors.amber),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'NEW PERSONAL RECORD! '
+                  '${_formatNumber(weight)} $unit × $reps reps\n'
+                  'Previous best: '
+                  '${_formatNumber(previousBest.weight)} '
+                  '${previousBest.unit} × '
+                  '${previousBest.reps} reps',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Set saved: ${_formatNumber(weight)} $unit × $reps reps',
+          ),
+        ),
+      );
+    }
     _startRestTimer();
   }
 
@@ -698,6 +729,23 @@ class _TrainingScreenState extends State<TrainingScreen> {
     }
 
     return bestSet;
+  }
+
+  bool _isPersonalRecord(WorkoutSet newSet, WorkoutSet? previousBest) {
+    if (previousBest == null) {
+      return false;
+    }
+
+    if (newSet.volume > previousBest.volume) {
+      return true;
+    }
+
+    if (newSet.volume == previousBest.volume &&
+        newSet.weight > previousBest.weight) {
+      return true;
+    }
+
+    return false;
   }
 
   ({double weight, int reps})? _getSuggestedInputTarget(
