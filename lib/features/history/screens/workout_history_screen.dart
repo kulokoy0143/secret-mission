@@ -841,6 +841,61 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     );
   }
 
+  bool _isSameStoredWorkoutSession(WorkoutSet first, WorkoutSet second) {
+    if (first.sessionId != null || second.sessionId != null) {
+      return first.sessionId != null &&
+          second.sessionId != null &&
+          first.sessionId == second.sessionId;
+    }
+
+    return first.workoutName == second.workoutName &&
+        _isSameDay(first.completedAt, second.completedAt);
+  }
+
+  bool _isHistoricalPersonalRecord(WorkoutSet targetSet) {
+    final allSets = Hive.box<WorkoutSet>('workout_sets').values.toList()
+      ..sort(
+        (first, second) => first.completedAt.compareTo(second.completedAt),
+      );
+
+    final previousSets = allSets.where((set) {
+      return set.exerciseName == targetSet.exerciseName &&
+          set.completedAt.isBefore(targetSet.completedAt) &&
+          !_isSameStoredWorkoutSession(set, targetSet);
+    }).toList();
+
+    if (previousSets.isEmpty) {
+      return false;
+    }
+
+    final latestPreviousSet = previousSets.last;
+
+    final previousSessionSets = previousSets.where((set) {
+      return _isSameStoredWorkoutSession(set, latestPreviousSet);
+    }).toList();
+
+    if (previousSessionSets.isEmpty) {
+      return false;
+    }
+
+    WorkoutSet previousBest = previousSessionSets.first;
+
+    for (final set in previousSessionSets.skip(1)) {
+      if (set.volume > previousBest.volume ||
+          (set.volume == previousBest.volume &&
+              set.weight > previousBest.weight)) {
+        previousBest = set;
+      }
+    }
+
+    if (targetSet.volume > previousBest.volume) {
+      return true;
+    }
+
+    return targetSet.volume == previousBest.volume &&
+        targetSet.weight > previousBest.weight;
+  }
+
   Widget _buildExerciseSection({
     required String exerciseName,
     required List<WorkoutSet> sets,
@@ -852,9 +907,13 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
           exerciseName,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
+
         const SizedBox(height: 9),
-        ...sets.map(
-          (set) => Padding(
+
+        ...sets.map((set) {
+          final isPersonalRecord = _isHistoricalPersonalRecord(set);
+
+          return Padding(
             padding: const EdgeInsets.only(bottom: 7),
             child: Row(
               children: [
@@ -868,15 +927,58 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                     ),
                   ),
                 ),
+
                 Expanded(
                   child: Text(
-                    '${_formatNumber(set.weight)} ${set.unit} × ${set.reps} reps',
+                    '${_formatNumber(set.weight)} '
+                    '${set.unit} × ${set.reps} reps',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
+
+                if (isPersonalRecord) ...[
+                  const SizedBox(width: 6),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.amber.withValues(alpha: 0.45),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.emoji_events_rounded,
+                          color: Colors.amber,
+                          size: 13,
+                        ),
+                        SizedBox(width: 3),
+                        Text(
+                          'PR',
+                          style: TextStyle(
+                            color: Colors.amber,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 7),
+                ],
+
                 Text(
                   _formatTime(set.completedAt),
                   style: const TextStyle(
@@ -886,8 +988,8 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                 ),
               ],
             ),
-          ),
-        ),
+          );
+        }),
       ],
     );
   }
