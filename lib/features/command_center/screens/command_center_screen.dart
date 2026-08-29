@@ -594,123 +594,123 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     required int personalRecordCount,
     required WorkoutSet? latestPersonalRecord,
   }) {
-    return InkWell(
-      onTap: _openHistory,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.amber.withValues(alpha: 0.20)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.emoji_events_rounded,
-                color: Colors.amber,
-              ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.20)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(14),
             ),
+            child: const Icon(Icons.emoji_events_rounded, color: Colors.amber),
+          ),
 
-            const SizedBox(width: 14),
+          const SizedBox(width: 14),
 
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PERSONAL RECORDS',
+                  style: TextStyle(
+                    color: Colors.amber,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+
+                const SizedBox(height: 7),
+
+                Text(
+                  personalRecordCount == 0
+                      ? 'No PRs this month'
+                      : personalRecordCount == 1
+                      ? '1 PR this month'
+                      : '$personalRecordCount PRs this month',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+
+                const SizedBox(height: 5),
+
+                if (latestPersonalRecord == null)
                   const Text(
-                    'PERSONAL RECORDS',
+                    'Keep building your baseline and pushing your progression.',
                     style: TextStyle(
-                      color: Colors.amber,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  )
+                else ...[
+                  Text(
+                    'Latest PR: ${latestPersonalRecord.exerciseName}',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
                     ),
                   ),
 
-                  const SizedBox(height: 7),
+                  const SizedBox(height: 3),
 
                   Text(
-                    personalRecordCount == 0
-                        ? 'No PRs this month'
-                        : personalRecordCount == 1
-                        ? '1 PR this month'
-                        : '$personalRecordCount PRs this month',
+                    '${_formatNumber(latestPersonalRecord.weight)} '
+                    '${latestPersonalRecord.unit} × '
+                    '${latestPersonalRecord.reps} reps',
                     style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ),
-
-                  const SizedBox(height: 5),
-
-                  if (latestPersonalRecord == null)
-                    const Text(
-                      'Keep building your baseline and pushing your progression.',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        height: 1.4,
-                      ),
-                    )
-                  else ...[
-                    Text(
-                      'Latest PR: ${latestPersonalRecord.exerciseName}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-
-                    const SizedBox(height: 3),
-
-                    Text(
-                      '${_formatNumber(latestPersonalRecord.weight)} '
-                      '${latestPersonalRecord.unit} × '
-                      '${latestPersonalRecord.reps} reps',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 10),
-
-                  const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'VIEW HISTORY',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        color: AppColors.primary,
-                        size: 16,
-                      ),
-                    ],
                   ),
                 ],
-              ),
+
+                const SizedBox(height: 10),
+
+                InkWell(
+                  onTap: _openHistory,
+                  borderRadius: BorderRadius.circular(6),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'VIEW HISTORY',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          color: AppColors.primary,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
