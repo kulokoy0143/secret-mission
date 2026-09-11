@@ -8,7 +8,14 @@ import 'package:secret_mission/features/recovery/services/recovery_service.dart'
 import 'package:secret_mission/features/recovery/services/recovery_storage_service.dart';
 
 class WorkoutHistoryScreen extends StatefulWidget {
-  const WorkoutHistoryScreen({super.key});
+  const WorkoutHistoryScreen({
+    super.key,
+    this.focusDate,
+    this.focusRequestId = 0,
+  });
+
+  final DateTime? focusDate;
+  final int focusRequestId;
 
   @override
   State<WorkoutHistoryScreen> createState() => _WorkoutHistoryScreenState();
@@ -26,9 +33,44 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
   void initState() {
     super.initState();
 
-    final now = DateTime.now();
-    _focusedMonth = DateTime(now.year, now.month);
-    _selectedDate = DateTime(now.year, now.month, now.day);
+    final initialDate = widget.focusDate ?? DateTime.now();
+
+    _focusedMonth = DateTime(initialDate.year, initialDate.month);
+
+    _selectedDate = DateTime(
+      initialDate.year,
+      initialDate.month,
+      initialDate.day,
+    );
+
+    _isSelectedDateExpanded = widget.focusDate != null;
+  }
+
+  @override
+  void didUpdateWidget(covariant WorkoutHistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.focusRequestId == oldWidget.focusRequestId) {
+      return;
+    }
+
+    final focusDate = widget.focusDate;
+
+    if (focusDate == null) {
+      return;
+    }
+
+    _focusOnDate(focusDate);
+  }
+
+  void _focusOnDate(DateTime date) {
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+
+    _focusedMonth = DateTime(normalizedDate.year, normalizedDate.month);
+
+    _selectedDate = normalizedDate;
+    _isSelectedDateExpanded = true;
+    _expandedSessionIds.clear();
   }
 
   @override

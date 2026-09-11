@@ -22,6 +22,9 @@ class CommandCenterScreen extends StatefulWidget {
 class _CommandCenterScreenState extends State<CommandCenterScreen> {
   int _selectedIndex = 0;
 
+  DateTime? _historyFocusDate;
+  int _historyFocusRequestId = 0;
+
   void _openWorkoutPicker() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -50,8 +53,10 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     });
   }
 
-  void _openHistory() {
+  void _openHistory([DateTime? focusDate]) {
     setState(() {
+      _historyFocusDate = focusDate;
+      _historyFocusRequestId++;
       _selectedIndex = 2;
     });
   }
@@ -71,7 +76,10 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 });
               },
             ),
-            const WorkoutHistoryScreen(),
+            WorkoutHistoryScreen(
+              focusDate: _historyFocusDate,
+              focusRequestId: _historyFocusRequestId,
+            ),
             const RecoveryScreen(),
             _buildPlaceholder('Agent File'),
           ],
@@ -681,7 +689,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 const SizedBox(height: 10),
 
                 InkWell(
-                  onTap: _openHistory,
+                  onTap: () => _openHistory(latestPersonalRecord?.completedAt),
                   borderRadius: BorderRadius.circular(6),
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
