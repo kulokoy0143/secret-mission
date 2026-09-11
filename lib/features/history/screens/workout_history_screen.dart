@@ -31,6 +31,8 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
 
   final Set<String> _expandedSessionIds = {};
 
+  final Map<String, GlobalKey> _sessionCardKeys = {};
+
   @override
   void initState() {
     super.initState();
@@ -83,7 +85,27 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
 
     if (sessionId != null) {
       _expandedSessionIds.add(sessionId);
+      _scrollToSession(sessionId);
     }
+  }
+
+  void _scrollToSession(String sessionId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final sessionContext = _sessionCardKeys[sessionId]?.currentContext;
+
+      if (sessionContext == null) {
+        return;
+      }
+
+      Scrollable.ensureVisible(
+        sessionContext,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+        alignment: 0.08,
+      );
+    });
   }
 
   @override
@@ -760,8 +782,13 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     final exercises = session.setsByExercise;
     final isExpanded = _expandedSessionIds.contains(session.sessionId);
     final personalRecordCount = _countPersonalRecordsForSession(session);
+    final sessionKey = _sessionCardKeys.putIfAbsent(
+      session.sessionId,
+      () => GlobalKey(),
+    );
 
     return InkWell(
+      key: sessionKey,
       onTap: () {
         setState(() {
           if (isExpanded) {
