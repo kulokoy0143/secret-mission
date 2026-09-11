@@ -23,6 +23,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
   int _selectedIndex = 0;
 
   DateTime? _historyFocusDate;
+  String? _historyFocusSessionId;
   int _historyFocusRequestId = 0;
 
   void _openWorkoutPicker() {
@@ -53,9 +54,10 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
     });
   }
 
-  void _openHistory([DateTime? focusDate]) {
+  void _openHistory({DateTime? focusDate, String? focusSessionId}) {
     setState(() {
       _historyFocusDate = focusDate;
+      _historyFocusSessionId = focusSessionId;
       _historyFocusRequestId++;
       _selectedIndex = 2;
     });
@@ -78,6 +80,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
             ),
             WorkoutHistoryScreen(
               focusDate: _historyFocusDate,
+              focusSessionId: _historyFocusSessionId,
               focusRequestId: _historyFocusRequestId,
             ),
             const RecoveryScreen(),
@@ -689,7 +692,10 @@ class _CommandCenterScreenState extends State<CommandCenterScreen> {
                 const SizedBox(height: 10),
 
                 InkWell(
-                  onTap: () => _openHistory(latestPersonalRecord?.completedAt),
+                  onTap: () => _openHistory(
+                    focusDate: latestPersonalRecord?.completedAt,
+                    focusSessionId: latestPersonalRecord?.sessionId,
+                  ),
                   borderRadius: BorderRadius.circular(6),
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),

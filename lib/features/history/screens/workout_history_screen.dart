@@ -11,10 +11,12 @@ class WorkoutHistoryScreen extends StatefulWidget {
   const WorkoutHistoryScreen({
     super.key,
     this.focusDate,
+    this.focusSessionId,
     this.focusRequestId = 0,
   });
 
   final DateTime? focusDate;
+  final String? focusSessionId;
   final int focusRequestId;
 
   @override
@@ -44,6 +46,12 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     );
 
     _isSelectedDateExpanded = widget.focusDate != null;
+
+    final focusSessionId = widget.focusSessionId;
+
+    if (focusSessionId != null) {
+      _expandedSessionIds.add(focusSessionId);
+    }
   }
 
   @override
@@ -60,17 +68,22 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
       return;
     }
 
-    _focusOnDate(focusDate);
+    _focusOnDate(focusDate, sessionId: widget.focusSessionId);
   }
 
-  void _focusOnDate(DateTime date) {
+  void _focusOnDate(DateTime date, {String? sessionId}) {
     final normalizedDate = DateTime(date.year, date.month, date.day);
 
     _focusedMonth = DateTime(normalizedDate.year, normalizedDate.month);
 
     _selectedDate = normalizedDate;
     _isSelectedDateExpanded = true;
+
     _expandedSessionIds.clear();
+
+    if (sessionId != null) {
+      _expandedSessionIds.add(sessionId);
+    }
   }
 
   @override
