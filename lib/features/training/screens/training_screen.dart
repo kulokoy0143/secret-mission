@@ -399,9 +399,11 @@ class _TrainingScreenState extends State<TrainingScreen> {
         .toSet()
         .length;
 
-    final personalRecordCount = sessionSets
+    final personalRecordSets = sessionSets
         .where(_isHistoricalPersonalRecord)
-        .length;
+        .toList();
+
+    final personalRecordCount = personalRecordSets.length;
 
     final todaySleep = RecoveryStorageService.getSleepEntry(DateTime.now());
 
@@ -416,6 +418,16 @@ class _TrainingScreenState extends State<TrainingScreen> {
       setCount: sessionSets.length,
       volumeText: _formatCompletionVolume(sessionSets),
       personalRecordCount: personalRecordCount,
+      personalRecords: personalRecordSets
+          .map(
+            (set) => WorkoutCompletionPr(
+              exerciseName: set.exerciseName,
+              weight: set.weight,
+              reps: set.reps,
+              unit: set.unit,
+            ),
+          )
+          .toList(),
       recovery: recovery,
     );
 

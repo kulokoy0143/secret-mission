@@ -2,6 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:secret_mission/app/app_theme.dart';
 import 'package:secret_mission/features/recovery/models/recovery_status.dart';
 
+class WorkoutCompletionPr {
+  const WorkoutCompletionPr({
+    required this.exerciseName,
+    required this.weight,
+    required this.reps,
+    required this.unit,
+  });
+
+  final String exerciseName;
+  final double weight;
+  final int reps;
+  final String unit;
+}
+
 class WorkoutCompletionData {
   const WorkoutCompletionData({
     required this.workoutName,
@@ -10,6 +24,7 @@ class WorkoutCompletionData {
     required this.setCount,
     required this.volumeText,
     required this.personalRecordCount,
+    required this.personalRecords,
     required this.recovery,
   });
 
@@ -19,6 +34,7 @@ class WorkoutCompletionData {
   final int setCount;
   final String volumeText;
   final int personalRecordCount;
+  final List<WorkoutCompletionPr> personalRecords;
   final RecoveryStatus? recovery;
 }
 
@@ -48,6 +64,14 @@ class WorkoutCompletionScreen extends StatelessWidget {
       case RecoveryLevel.excellent:
         return AppColors.success;
     }
+  }
+
+  String _formatNumber(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toStringAsFixed(0);
+    }
+
+    return value.toStringAsFixed(1);
   }
 
   String _formatDuration(Duration duration) {
@@ -258,6 +282,62 @@ class WorkoutCompletionScreen extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
+                      if (data.personalRecords.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+
+                        ...data.personalRecords.map(
+                          (record) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.background,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.emoji_events_rounded,
+                                    color: Colors.amber,
+                                    size: 18,
+                                  ),
+
+                                  const SizedBox(width: 10),
+
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          record.exerciseName,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+
+                                        const SizedBox(height: 3),
+
+                                        Text(
+                                          '${_formatNumber(record.weight)} '
+                                          '${record.unit} × '
+                                          '${record.reps} reps',
+                                          style: const TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
