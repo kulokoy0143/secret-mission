@@ -10,6 +10,7 @@ import 'package:secret_mission/features/training/models/workout_set.dart';
 import 'package:secret_mission/features/training/services/workout_storage_service.dart';
 import 'package:secret_mission/features/training/services/session_manager.dart';
 import 'package:secret_mission/features/training/data/workout_plans.dart';
+import 'package:secret_mission/features/training/screens/workout_completion_screen.dart';
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key, required this.onWorkoutFinished});
@@ -30,6 +31,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
   );
 
   List<WorkoutSet> _completedSets = [];
+
+  WorkoutCompletionData? _completionData;
 
   bool _usesKilograms = false;
 
@@ -312,6 +315,30 @@ class _TrainingScreenState extends State<TrainingScreen> {
     return value.toStringAsFixed(1);
   }
 
+  String _formatCompletionVolume(List<WorkoutSet> sets) {
+    if (sets.isEmpty) {
+      return '0 ${_usesKilograms ? 'kg' : 'lb'}';
+    }
+
+    final displayUnit = sets.first.unit;
+
+    double totalVolume = 0;
+
+    for (final set in sets) {
+      var weight = set.weight;
+
+      if (set.unit != displayUnit) {
+        weight = displayUnit == 'kg'
+            ? set.weight / 2.20462
+            : set.weight * 2.20462;
+      }
+
+      totalVolume += weight * set.reps;
+    }
+
+    return '${_formatNumber(totalVolume)} $displayUnit';
+  }
+
   String _formatTime(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
@@ -328,7 +355,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
           title: const Text('Finish Mission?'),
           content: const Text(
             'Are you sure you are done with this workout? '
-            'You will return to the Command Center.',
+            'Your mission debrief will be generated next.',
           ),
           actions: [
             TextButton(
@@ -354,31 +381,71 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 
   void _finishWorkout() {
-    final finishedWorkout = SessionManager.finishWorkout();
+    final activeWorkout = SessionManager.activeWorkout;
 
-    if (finishedWorkout == null) {
+    if (activeWorkout == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('There is no active workout to finish.')),
       );
       return;
     }
+
+    final sessionSets = WorkoutStorageService.getAllSets()
+        .where((set) => set.sessionId == activeWorkout.sessionId)
+        .toList();
+
+    final exerciseCount = sessionSets
+        .map((set) => set.exerciseName)
+        .toSet()
+        .length;
+
+    final personalRecordCount = sessionSets
+        .where(_isHistoricalPersonalRecord)
+        .length;
+
+    final todaySleep = RecoveryStorageService.getSleepEntry(DateTime.now());
+
+    final recovery = todaySleep == null
+        ? null
+        : RecoveryService.calculateRecovery(todaySleep);
+
+    final completionData = WorkoutCompletionData(
+      workoutName: activeWorkout.name,
+      duration: DateTime.now().difference(activeWorkout.startedAt),
+      exerciseCount: exerciseCount,
+      setCount: sessionSets.length,
+      volumeText: _formatCompletionVolume(sessionSets),
+      personalRecordCount: personalRecordCount,
+      recovery: recovery,
+    );
+
+    final finishedWorkout = SessionManager.finishWorkout();
+
+    if (finishedWorkout == null) {
+      return;
+    }
+
     _restTimer?.cancel();
 
-    _resetWorkoutProgress();
+    setState(() {
+      _isResting = false;
+      _isTimerPaused = false;
+      _remainingSeconds = _restSeconds;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${finishedWorkout.name} completed. Mission accomplished!',
-        ),
-      ),
-    );
+      _completionData = completionData;
+    });
+  }
+
+  void _closeWorkoutCompletion() {
+    _resetWorkoutProgress();
 
     widget.onWorkoutFinished();
   }
 
   void _resetWorkoutProgress() {
     setState(() {
+      _completionData = null;
+
       _currentExerciseIndex = 0;
       _completedSets.clear();
 
@@ -519,6 +586,15 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final completionData = _completionData;
+
+    if (completionData != null) {
+      return WorkoutCompletionScreen(
+        data: completionData,
+        onDone: _closeWorkoutCompletion,
+      );
+    }
+
     final activeWorkout = SessionManager.activeWorkout;
 
     if (activeWorkout == null) {
@@ -746,6 +822,60 @@ class _TrainingScreenState extends State<TrainingScreen> {
     }
 
     return false;
+  }
+
+  bool _isSameStoredWorkoutSession(WorkoutSet first, WorkoutSet second) {
+    if (first.sessionId != null || second.sessionId != null) {
+      return first.sessionId != null &&
+          second.sessionId != null &&
+          first.sessionId == second.sessionId;
+    }
+
+    return first.workoutName == second.workoutName &&
+        first.completedAt.year == second.completedAt.year &&
+        first.completedAt.month == second.completedAt.month &&
+        first.completedAt.day == second.completedAt.day;
+  }
+
+  bool _isHistoricalPersonalRecord(WorkoutSet targetSet) {
+    final allSets = WorkoutStorageService.getAllSets();
+
+    final previousSets = allSets.where((set) {
+      return set.exerciseName == targetSet.exerciseName &&
+          set.completedAt.isBefore(targetSet.completedAt) &&
+          !_isSameStoredWorkoutSession(set, targetSet);
+    }).toList();
+
+    if (previousSets.isEmpty) {
+      return false;
+    }
+
+    final latestPreviousSet = previousSets.last;
+
+    final previousSessionSets = previousSets.where((set) {
+      return _isSameStoredWorkoutSession(set, latestPreviousSet);
+    }).toList();
+
+    if (previousSessionSets.isEmpty) {
+      return false;
+    }
+
+    WorkoutSet previousBest = previousSessionSets.first;
+
+    for (final set in previousSessionSets.skip(1)) {
+      if (set.volume > previousBest.volume ||
+          (set.volume == previousBest.volume &&
+              set.weight > previousBest.weight)) {
+        previousBest = set;
+      }
+    }
+
+    if (targetSet.volume > previousBest.volume) {
+      return true;
+    }
+
+    return targetSet.volume == previousBest.volume &&
+        targetSet.weight > previousBest.weight;
   }
 
   ({double weight, int reps})? _getSuggestedInputTarget(
