@@ -339,6 +339,103 @@ class _TrainingScreenState extends State<TrainingScreen> {
     return '${_formatNumber(totalVolume)} $displayUnit';
   }
 
+  double _calculateVolumeInUnit(List<WorkoutSet> sets, String displayUnit) {
+    double totalVolume = 0;
+
+    for (final set in sets) {
+      var weight = set.weight;
+
+      if (set.unit != displayUnit) {
+        weight = displayUnit == 'kg'
+            ? set.weight / 2.20462
+            : set.weight * 2.20462;
+      }
+
+      totalVolume += weight * set.reps;
+    }
+
+    return totalVolume;
+  }
+
+  List<WorkoutSet> _getPreviousMatchingMissionSets({
+    required String workoutName,
+    required String currentSessionId,
+  }) {
+    final previousSets = WorkoutStorageService.getAllSets()
+        .where(
+          (set) =>
+              set.workoutName == workoutName &&
+              set.sessionId != currentSessionId,
+        )
+        .toList();
+
+    if (previousSets.isEmpty) {
+      return [];
+    }
+
+    final latestPreviousSet = previousSets.last;
+    final previousSessionId = latestPreviousSet.sessionId;
+
+    if (previousSessionId != null) {
+      return previousSets
+          .where((set) => set.sessionId == previousSessionId)
+          .toList();
+    }
+
+    final previousDate = DateTime(
+      latestPreviousSet.completedAt.year,
+      latestPreviousSet.completedAt.month,
+      latestPreviousSet.completedAt.day,
+    );
+
+    return previousSets.where((set) {
+      final setDate = DateTime(
+        set.completedAt.year,
+        set.completedAt.month,
+        set.completedAt.day,
+      );
+
+      return set.sessionId == null &&
+          set.workoutName == workoutName &&
+          setDate == previousDate;
+    }).toList();
+  }
+
+  WorkoutComparisonData? _buildWorkoutComparison({
+    required String workoutName,
+    required String currentSessionId,
+    required List<WorkoutSet> currentSets,
+  }) {
+    final previousSets = _getPreviousMatchingMissionSets(
+      workoutName: workoutName,
+      currentSessionId: currentSessionId,
+    );
+
+    if (previousSets.isEmpty) {
+      return null;
+    }
+
+    final displayUnit = currentSets.isNotEmpty
+        ? currentSets.first.unit
+        : previousSets.first.unit;
+
+    final currentVolume = _calculateVolumeInUnit(currentSets, displayUnit);
+
+    final previousVolume = _calculateVolumeInUnit(previousSets, displayUnit);
+
+    final volumeChangePercent = previousVolume == 0
+        ? 0.0
+        : ((currentVolume - previousVolume) / previousVolume) * 100;
+
+    return WorkoutComparisonData(
+      previousDate: previousSets.last.completedAt,
+      previousSetCount: previousSets.length,
+      previousVolumeText: '${_formatNumber(previousVolume)} $displayUnit',
+      setDifference: currentSets.length - previousSets.length,
+      volumeChangePercent: volumeChangePercent,
+    );
+  }
+
   String _formatTime(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
@@ -411,6 +508,12 @@ class _TrainingScreenState extends State<TrainingScreen> {
         ? null
         : RecoveryService.calculateRecovery(todaySleep);
 
+    final comparison = _buildWorkoutComparison(
+      workoutName: activeWorkout.name,
+      currentSessionId: activeWorkout.sessionId,
+      currentSets: sessionSets,
+    );
+
     final completionData = WorkoutCompletionData(
       workoutName: activeWorkout.name,
       duration: DateTime.now().difference(activeWorkout.startedAt),
@@ -428,6 +531,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
             ),
           )
           .toList(),
+      comparison: comparison,
       recovery: recovery,
     );
 

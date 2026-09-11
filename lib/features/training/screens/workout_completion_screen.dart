@@ -16,6 +16,22 @@ class WorkoutCompletionPr {
   final String unit;
 }
 
+class WorkoutComparisonData {
+  const WorkoutComparisonData({
+    required this.previousDate,
+    required this.previousSetCount,
+    required this.previousVolumeText,
+    required this.setDifference,
+    required this.volumeChangePercent,
+  });
+
+  final DateTime previousDate;
+  final int previousSetCount;
+  final String previousVolumeText;
+  final int setDifference;
+  final double volumeChangePercent;
+}
+
 class WorkoutCompletionData {
   const WorkoutCompletionData({
     required this.workoutName,
@@ -25,6 +41,7 @@ class WorkoutCompletionData {
     required this.volumeText,
     required this.personalRecordCount,
     required this.personalRecords,
+    required this.comparison,
     required this.recovery,
   });
 
@@ -35,6 +52,7 @@ class WorkoutCompletionData {
   final String volumeText;
   final int personalRecordCount;
   final List<WorkoutCompletionPr> personalRecords;
+  final WorkoutComparisonData? comparison;
   final RecoveryStatus? recovery;
 }
 
@@ -72,6 +90,39 @@ class WorkoutCompletionScreen extends StatelessWidget {
     }
 
     return value.toStringAsFixed(1);
+  }
+
+  String _formatShortDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return '${months[date.month - 1]} ${date.day}';
+  }
+
+  String _formatChange(int value) {
+    if (value > 0) {
+      return '+$value';
+    }
+
+    return '$value';
+  }
+
+  String _formatPercentChange(double value) {
+    final prefix = value > 0 ? '+' : '';
+
+    return '$prefix${value.toStringAsFixed(1)}%';
   }
 
   String _formatDuration(Duration duration) {
@@ -354,6 +405,121 @@ class WorkoutCompletionScreen extends StatelessWidget {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.18),
+              ),
+            ),
+            child: data.comparison == null
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'MISSION COMPARISON',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      Text(
+                        'First recorded ${data.workoutName}.',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      const Text(
+                        'This mission becomes your comparison baseline.',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'MISSION COMPARISON',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+
+                      const SizedBox(height: 5),
+
+                      Text(
+                        'VS ${_formatShortDate(data.comparison!.previousDate)}',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildComparisonStat(
+                              label: 'Previous Volume',
+                              value: data.comparison!.previousVolumeText,
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          Expanded(
+                            child: _buildComparisonStat(
+                              label: 'Sets',
+                              value: _formatChange(
+                                data.comparison!.setDifference,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          Expanded(
+                            child: _buildComparisonStat(
+                              label: 'Volume',
+                              value: _formatPercentChange(
+                                data.comparison!.volumeChangePercent,
+                              ),
+                              valueColor:
+                                  data.comparison!.volumeChangePercent > 0
+                                  ? AppColors.success
+                                  : data.comparison!.volumeChangePercent < 0
+                                  ? Colors.orangeAccent
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
                 color: _recoveryColor().withValues(alpha: 0.22),
               ),
             ),
@@ -415,6 +581,44 @@ class WorkoutCompletionScreen extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComparisonStat({
+    required String label,
+    required String value,
+    Color? valueColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: valueColor ?? AppColors.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 9),
           ),
         ],
       ),
