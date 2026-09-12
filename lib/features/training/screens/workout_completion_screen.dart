@@ -125,6 +125,107 @@ class WorkoutCompletionScreen extends StatelessWidget {
     return '$prefix${value.toStringAsFixed(1)}%';
   }
 
+  String _performanceVerdictLabel() {
+    final comparison = data.comparison;
+
+    if (comparison == null) {
+      return 'BASELINE ESTABLISHED';
+    }
+
+    final volumeChange = comparison.volumeChangePercent;
+
+    if (volumeChange >= 5) {
+      return 'PROGRESSED';
+    }
+
+    if (volumeChange <= -5) {
+      final recovery = data.recovery;
+
+      if (recovery?.level == RecoveryLevel.low ||
+          recovery?.level == RecoveryLevel.moderate) {
+        return 'RECOVERY SESSION';
+      }
+
+      return 'LOWER VOLUME';
+    }
+
+    return 'MAINTAINED';
+  }
+
+  String _performanceVerdictMessage() {
+    final comparison = data.comparison;
+
+    if (comparison == null) {
+      return 'Your first recorded ${data.workoutName} '
+          'is now ready for future comparison.';
+    }
+
+    final volumeChange = comparison.volumeChangePercent;
+
+    if (volumeChange >= 5) {
+      return 'Training volume increased '
+          '${volumeChange.toStringAsFixed(1)}% '
+          'from your previous ${data.workoutName}.';
+    }
+
+    if (volumeChange <= -5) {
+      final recovery = data.recovery;
+
+      if (recovery?.level == RecoveryLevel.low ||
+          recovery?.level == RecoveryLevel.moderate) {
+        return 'Lower workload was completed during '
+            'a reduced-recovery day.';
+      }
+
+      return 'Training volume was '
+          '${volumeChange.abs().toStringAsFixed(1)}% '
+          'lower than your previous ${data.workoutName}.';
+    }
+
+    return 'Performance stayed within range of '
+        'your previous ${data.workoutName}.';
+  }
+
+  Color _performanceVerdictColor() {
+    switch (_performanceVerdictLabel()) {
+      case 'PROGRESSED':
+        return AppColors.success;
+
+      case 'RECOVERY SESSION':
+        return Colors.orangeAccent;
+
+      case 'LOWER VOLUME':
+        return Colors.orangeAccent;
+
+      case 'BASELINE ESTABLISHED':
+        return AppColors.primary;
+
+      case 'MAINTAINED':
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  IconData _performanceVerdictIcon() {
+    switch (_performanceVerdictLabel()) {
+      case 'PROGRESSED':
+        return Icons.trending_up_rounded;
+
+      case 'RECOVERY SESSION':
+        return Icons.bedtime_rounded;
+
+      case 'LOWER VOLUME':
+        return Icons.trending_down_rounded;
+
+      case 'BASELINE ESTABLISHED':
+        return Icons.flag_rounded;
+
+      case 'MAINTAINED':
+      default:
+        return Icons.trending_flat_rounded;
+    }
+  }
+
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
@@ -197,7 +298,11 @@ class WorkoutCompletionScreen extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 22),
+
+          _buildPerformanceVerdict(),
+
+          const SizedBox(height: 16),
 
           Container(
             width: double.infinity,
@@ -580,6 +685,76 @@ class WorkoutCompletionScreen extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPerformanceVerdict() {
+    final color = _performanceVerdictColor();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(_performanceVerdictIcon(), color: color),
+          ),
+
+          const SizedBox(width: 14),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PERFORMANCE VERDICT',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+
+                const SizedBox(height: 5),
+
+                Text(
+                  _performanceVerdictLabel(),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+
+                const SizedBox(height: 5),
+
+                Text(
+                  _performanceVerdictMessage(),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
