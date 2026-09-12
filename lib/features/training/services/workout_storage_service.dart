@@ -26,6 +26,13 @@ class WorkoutStorageService {
     return sets;
   }
 
+  /// Returns every saved set for one exercise, oldest first.
+  static List<WorkoutSet> getExerciseSets(String exerciseName) {
+    return getAllSets()
+        .where((set) => set.exerciseName == exerciseName)
+        .toList();
+  }
+
   /// Permanently saves a workout set.
   static Future<void> saveSet(WorkoutSet workoutSet) async {
     await _workoutBox.add(workoutSet);

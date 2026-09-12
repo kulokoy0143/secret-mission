@@ -6,6 +6,7 @@ import 'package:secret_mission/features/recovery/models/recovery_status.dart';
 import 'package:secret_mission/features/recovery/services/recovery_service.dart';
 import 'package:secret_mission/features/recovery/services/recovery_storage_service.dart';
 import 'package:secret_mission/features/training/screens/exercise_guide_screen.dart';
+import 'package:secret_mission/features/training/screens/exercise_progress_screen.dart';
 import 'package:secret_mission/features/training/models/workout_set.dart';
 import 'package:secret_mission/features/training/services/workout_storage_service.dart';
 import 'package:secret_mission/features/training/services/session_manager.dart';
@@ -1016,6 +1017,11 @@ class _TrainingScreenState extends State<TrainingScreen> {
           const SizedBox(height: 16),
 
           _buildPreviousPerformance(todayRecovery),
+
+          const SizedBox(height: 10),
+
+          _buildExerciseProgressButton(),
+
           const SizedBox(height: 16),
 
           _buildSetLogger(),
@@ -1915,6 +1921,36 @@ class _TrainingScreenState extends State<TrainingScreen> {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildExerciseProgressButton() {
+    final canOpen =
+        _totalExercises > 0 && _currentExerciseName != 'No Exercise';
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: !canOpen
+            ? null
+            : () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ExerciseProgressScreen(
+                      exerciseName: _currentExerciseName,
+                    ),
+                  ),
+                );
+              },
+        icon: const Icon(Icons.query_stats_rounded),
+        label: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 14),
+          child: Text(
+            'VIEW EXERCISE PROGRESS',
+            style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.5),
+          ),
+        ),
       ),
     );
   }
