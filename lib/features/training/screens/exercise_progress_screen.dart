@@ -17,6 +17,8 @@ class ExerciseProgressScreen extends StatefulWidget {
 class _ExerciseProgressScreenState extends State<ExerciseProgressScreen> {
   _ExerciseTrendMetric _trendMetric = _ExerciseTrendMetric.volume;
 
+  int? _selectedTrendPointIndex;
+
   String get exerciseName => widget.exerciseName;
 
   double _weightInKilograms(WorkoutSet set) {
@@ -171,6 +173,38 @@ class _ExerciseProgressScreenState extends State<ExerciseProgressScreen> {
     }
 
     return AppColors.primary;
+  }
+
+  void _selectTrendPoint({
+    required double tapX,
+    required double chartWidth,
+    required int pointCount,
+  }) {
+    if (pointCount <= 0 || chartWidth <= 20) {
+      return;
+    }
+
+    if (pointCount == 1) {
+      setState(() {
+        _selectedTrendPointIndex = 0;
+      });
+      return;
+    }
+
+    const horizontalPadding = 10.0;
+
+    final usableWidth = chartWidth - horizontalPadding * 2;
+
+    final normalizedX = ((tapX - horizontalPadding) / usableWidth).clamp(
+      0.0,
+      1.0,
+    );
+
+    final index = (normalizedX * (pointCount - 1)).round();
+
+    setState(() {
+      _selectedTrendPointIndex = index;
+    });
   }
 
   @override
@@ -584,6 +618,7 @@ class _ExerciseProgressScreenState extends State<ExerciseProgressScreen> {
 
           setState(() {
             _trendMetric = selection.first;
+            _selectedTrendPointIndex = null;
           });
         },
       ),
@@ -653,6 +688,15 @@ class _ExerciseProgressScreenState extends State<ExerciseProgressScreen> {
 
     final trendLabel = isLoadTrend ? 'Best-set load' : 'Best-set volume';
 
+    final selectedIndex = _selectedTrendPointIndex;
+
+    final selectedSession =
+        selectedIndex != null &&
+            selectedIndex >= 0 &&
+            selectedIndex < chartSessions.length
+        ? chartSessions[selectedIndex]
+        : null;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -710,16 +754,51 @@ class _ExerciseProgressScreenState extends State<ExerciseProgressScreen> {
           SizedBox(
             height: 180,
             width: double.infinity,
-            child: CustomPaint(
-              painter: _ExerciseTrendPainter(
-                values: values,
-                lineColor: AppColors.primary,
-                gridColor: AppColors.textSecondary.withValues(alpha: 0.12),
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapDown: (details) {
+                    _selectTrendPoint(
+                      tapX: details.localPosition.dx,
+                      chartWidth: constraints.maxWidth,
+                      pointCount: values.length,
+                    );
+                  },
+                  child: CustomPaint(
+                    painter: _ExerciseTrendPainter(
+                      values: values,
+                      lineColor: AppColors.primary,
+                      gridColor: AppColors.textSecondary.withValues(
+                        alpha: 0.12,
+                      ),
+                      selectedIndex: _selectedTrendPointIndex,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
 
           const SizedBox(height: 10),
+
+          if (selectedSession != null) ...[
+            _buildSelectedTrendSession(
+              session: selectedSession,
+              displayUnit: displayUnit,
+            ),
+
+            const SizedBox(height: 12),
+          ] else ...[
+            const Center(
+              child: Text(
+                'Tap a chart point to inspect that session.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+          ],
 
           Row(
             children: [
@@ -775,6 +854,141 @@ class _ExerciseProgressScreenState extends State<ExerciseProgressScreen> {
               fontSize: 11,
               fontWeight: FontWeight.w700,
               height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectedTrendSession({
+    required _ExerciseSessionSnapshot session,
+    required String displayUnit,
+  }) {
+    final displayLoad = _weightInDisplayUnit(session.bestSet, displayUnit);
+
+    final displayVolume = displayLoad * session.bestSet.reps;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'SESSION INTEL',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            '${_formatShortDate(session.date)}'
+            ' • ${session.workoutName}',
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            'Best set: ${_formatSet(session.bestSet)}',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              Expanded(
+                child: _buildTrendSessionStat(
+                  label: 'LOAD',
+                  value:
+                      '${_formatNumber(displayLoad)} '
+                      '$displayUnit',
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              Expanded(
+                child: _buildTrendSessionStat(
+                  label: 'VOLUME',
+                  value:
+                      '${_formatNumber(displayVolume)} '
+                      '$displayUnit',
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          Row(
+            children: [
+              Expanded(
+                child: _buildTrendSessionStat(
+                  label: 'REPS',
+                  value: '${session.bestSet.reps}',
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              Expanded(
+                child: _buildTrendSessionStat(
+                  label: 'SETS',
+                  value: '${session.setCount}',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendSessionStat({
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          ),
+
+          const SizedBox(height: 3),
+
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 8,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
             ),
           ),
         ],
@@ -941,11 +1155,13 @@ class _ExerciseTrendPainter extends CustomPainter {
     required this.values,
     required this.lineColor,
     required this.gridColor,
+    required this.selectedIndex,
   });
 
   final List<double> values;
   final Color lineColor;
   final Color gridColor;
+  final int? selectedIndex;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1019,6 +1235,18 @@ class _ExerciseTrendPainter extends CustomPainter {
       ..strokeWidth = 5
       ..style = PaintingStyle.stroke;
 
+    final selectedHaloPaint = Paint()
+      ..color = lineColor.withValues(alpha: 0.22)
+      ..style = PaintingStyle.fill;
+
+    final selectedPointPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    final selectedCenterPaint = Paint()
+      ..color = lineColor
+      ..style = PaintingStyle.fill;
+
     final points = <Offset>[];
 
     for (var index = 0; index < values.length; index++) {
@@ -1059,10 +1287,22 @@ class _ExerciseTrendPainter extends CustomPainter {
       canvas.drawPath(linePath, linePaint);
     }
 
-    for (final point in points) {
-      canvas.drawCircle(point, 6, pointBorderPaint);
+    for (var index = 0; index < points.length; index++) {
+      final point = points[index];
 
-      canvas.drawCircle(point, 4, pointFillPaint);
+      final isSelected = selectedIndex == index;
+
+      if (isSelected) {
+        canvas.drawCircle(point, 11, selectedHaloPaint);
+
+        canvas.drawCircle(point, 7, selectedPointPaint);
+
+        canvas.drawCircle(point, 4, selectedCenterPaint);
+      } else {
+        canvas.drawCircle(point, 6, pointBorderPaint);
+
+        canvas.drawCircle(point, 4, pointFillPaint);
+      }
     }
   }
 
@@ -1070,6 +1310,7 @@ class _ExerciseTrendPainter extends CustomPainter {
   bool shouldRepaint(covariant _ExerciseTrendPainter oldDelegate) {
     if (oldDelegate.lineColor != lineColor ||
         oldDelegate.gridColor != gridColor ||
+        oldDelegate.selectedIndex != selectedIndex ||
         oldDelegate.values.length != values.length) {
       return true;
     }
