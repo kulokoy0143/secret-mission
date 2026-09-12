@@ -3,10 +3,21 @@ import 'package:secret_mission/app/app_theme.dart';
 import 'package:secret_mission/features/training/models/workout_set.dart';
 import 'package:secret_mission/features/training/services/workout_storage_service.dart';
 
-class ExerciseProgressScreen extends StatelessWidget {
+enum _ExerciseTrendMetric { load, volume }
+
+class ExerciseProgressScreen extends StatefulWidget {
   const ExerciseProgressScreen({super.key, required this.exerciseName});
 
   final String exerciseName;
+
+  @override
+  State<ExerciseProgressScreen> createState() => _ExerciseProgressScreenState();
+}
+
+class _ExerciseProgressScreenState extends State<ExerciseProgressScreen> {
+  _ExerciseTrendMetric _trendMetric = _ExerciseTrendMetric.volume;
+
+  String get exerciseName => widget.exerciseName;
 
   double _weightInKilograms(WorkoutSet set) {
     if (set.unit == 'kg') {
@@ -14,6 +25,18 @@ class ExerciseProgressScreen extends StatelessWidget {
     }
 
     return set.weight / 2.20462;
+  }
+
+  double _weightInDisplayUnit(WorkoutSet set, String displayUnit) {
+    if (set.unit == displayUnit) {
+      return set.weight;
+    }
+
+    if (displayUnit == 'kg') {
+      return set.weight / 2.20462;
+    }
+
+    return set.weight * 2.20462;
   }
 
   double _normalizedSetVolume(WorkoutSet set) {
@@ -524,6 +547,49 @@ class ExerciseProgressScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildTrendMetricSelector() {
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<_ExerciseTrendMetric>(
+        segments: const [
+          ButtonSegment<_ExerciseTrendMetric>(
+            value: _ExerciseTrendMetric.load,
+            label: Text(
+              'LOAD',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+          ButtonSegment<_ExerciseTrendMetric>(
+            value: _ExerciseTrendMetric.volume,
+            label: Text(
+              'VOLUME',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+        ],
+        selected: {_trendMetric},
+        showSelectedIcon: false,
+        onSelectionChanged: (selection) {
+          if (selection.isEmpty) {
+            return;
+          }
+
+          setState(() {
+            _trendMetric = selection.first;
+          });
+        },
+      ),
+    );
+  }
+
   Widget _buildPerformanceTrend(List<_ExerciseSessionSnapshot> sessions) {
     if (sessions.length < 2) {
       return Container(
@@ -566,14 +632,26 @@ class ExerciseProgressScreen extends StatelessWidget {
         ? sessions.sublist(sessions.length - 10)
         : sessions;
 
-    final values = chartSessions
-        .map((session) => _normalizedSetVolume(session.bestSet))
-        .toList();
+    final displayUnit = chartSessions.last.bestSet.unit;
+
+    final isLoadTrend = _trendMetric == _ExerciseTrendMetric.load;
+
+    final values = chartSessions.map((session) {
+      final load = _weightInDisplayUnit(session.bestSet, displayUnit);
+
+      if (isLoadTrend) {
+        return load;
+      }
+
+      return load * session.bestSet.reps;
+    }).toList();
 
     final firstValue = values.first;
     final latestValue = values.last;
 
     final trendChange = _percentChange(latestValue, firstValue);
+
+    final trendLabel = isLoadTrend ? 'Best-set load' : 'Best-set volume';
 
     return Container(
       width: double.infinity,
@@ -600,10 +678,12 @@ class ExerciseProgressScreen extends StatelessWidget {
 
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Best-set volume',
-                  style: TextStyle(
+                  isLoadTrend
+                      ? 'Best-set load ($displayUnit)'
+                      : 'Best-set volume ($displayUnit × reps)',
+                  style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
@@ -620,6 +700,10 @@ class ExerciseProgressScreen extends StatelessWidget {
               ),
             ],
           ),
+
+          const SizedBox(height: 14),
+
+          _buildTrendMetricSelector(),
 
           const SizedBox(height: 20),
 
@@ -678,14 +762,14 @@ class ExerciseProgressScreen extends StatelessWidget {
 
           Text(
             trendChange > 5
-                ? 'Best-set performance has improved '
+                ? '$trendLabel has increased '
                       '${trendChange.toStringAsFixed(1)}% '
                       'across this trend.'
                 : trendChange < -5
-                ? 'Best-set performance is '
+                ? '$trendLabel is '
                       '${trendChange.abs().toStringAsFixed(1)}% '
                       'below the start of this trend.'
-                : 'Best-set performance has remained relatively stable.',
+                : '$trendLabel has remained relatively stable.',
             style: TextStyle(
               color: _trendColor(trendChange),
               fontSize: 11,
