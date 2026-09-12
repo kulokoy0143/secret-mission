@@ -32,6 +32,35 @@ class WorkoutComparisonData {
   final double volumeChangePercent;
 }
 
+enum ExerciseProgressionStatus { baseline, progressed, maintained, lower }
+
+class ExerciseProgressionData {
+  const ExerciseProgressionData({
+    required this.exerciseName,
+    required this.currentWeight,
+    required this.currentReps,
+    required this.currentUnit,
+    required this.status,
+    required this.changeText,
+    this.previousWeight,
+    this.previousReps,
+    this.previousUnit,
+  });
+
+  final String exerciseName;
+
+  final double currentWeight;
+  final int currentReps;
+  final String currentUnit;
+
+  final double? previousWeight;
+  final int? previousReps;
+  final String? previousUnit;
+
+  final ExerciseProgressionStatus status;
+  final String changeText;
+}
+
 class WorkoutCompletionData {
   const WorkoutCompletionData({
     required this.workoutName,
@@ -42,6 +71,7 @@ class WorkoutCompletionData {
     required this.personalRecordCount,
     required this.personalRecords,
     required this.comparison,
+    required this.exerciseProgressions,
     required this.recovery,
   });
 
@@ -53,6 +83,7 @@ class WorkoutCompletionData {
   final int personalRecordCount;
   final List<WorkoutCompletionPr> personalRecords;
   final WorkoutComparisonData? comparison;
+  final List<ExerciseProgressionData> exerciseProgressions;
   final RecoveryStatus? recovery;
 }
 
@@ -618,6 +649,10 @@ class WorkoutCompletionScreen extends StatelessWidget {
 
           const SizedBox(height: 16),
 
+          _buildExerciseProgressionSection(),
+
+          const SizedBox(height: 16),
+
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
@@ -687,6 +722,274 @@ class WorkoutCompletionScreen extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  String _exerciseProgressionLabel(ExerciseProgressionStatus status) {
+    switch (status) {
+      case ExerciseProgressionStatus.baseline:
+        return 'BASELINE';
+
+      case ExerciseProgressionStatus.progressed:
+        return 'PROGRESSED';
+
+      case ExerciseProgressionStatus.maintained:
+        return 'MAINTAINED';
+
+      case ExerciseProgressionStatus.lower:
+        return 'LOWER';
+    }
+  }
+
+  Color _exerciseProgressionColor(ExerciseProgressionStatus status) {
+    switch (status) {
+      case ExerciseProgressionStatus.baseline:
+        return AppColors.primary;
+
+      case ExerciseProgressionStatus.progressed:
+        return AppColors.success;
+
+      case ExerciseProgressionStatus.maintained:
+        return AppColors.primary;
+
+      case ExerciseProgressionStatus.lower:
+        return Colors.orangeAccent;
+    }
+  }
+
+  IconData _exerciseProgressionIcon(ExerciseProgressionStatus status) {
+    switch (status) {
+      case ExerciseProgressionStatus.baseline:
+        return Icons.flag_rounded;
+
+      case ExerciseProgressionStatus.progressed:
+        return Icons.trending_up_rounded;
+
+      case ExerciseProgressionStatus.maintained:
+        return Icons.trending_flat_rounded;
+
+      case ExerciseProgressionStatus.lower:
+        return Icons.trending_down_rounded;
+    }
+  }
+
+  Widget _buildExerciseProgressionValue({
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.7,
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExerciseProgressionSection() {
+    final progressions = data.exerciseProgressions;
+
+    final progressedCount = progressions
+        .where((item) => item.status == ExerciseProgressionStatus.progressed)
+        .length;
+
+    final maintainedCount = progressions
+        .where((item) => item.status == ExerciseProgressionStatus.maintained)
+        .length;
+
+    final baselineCount = progressions
+        .where((item) => item.status == ExerciseProgressionStatus.baseline)
+        .length;
+
+    final lowerCount = progressions
+        .where((item) => item.status == ExerciseProgressionStatus.lower)
+        .length;
+
+    final summaryParts = <String>[];
+
+    if (progressedCount > 0) {
+      summaryParts.add('$progressedCount progressed');
+    }
+
+    if (maintainedCount > 0) {
+      summaryParts.add('$maintainedCount maintained');
+    }
+
+    if (baselineCount > 0) {
+      summaryParts.add('$baselineCount baseline');
+    }
+
+    if (lowerCount > 0) {
+      summaryParts.add('$lowerCount lower');
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'EXERCISE PROGRESSION',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            progressions.isEmpty
+                ? 'No completed exercise data.'
+                : summaryParts.join(' • '),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+
+          if (progressions.isNotEmpty) ...[
+            const SizedBox(height: 16),
+
+            ...progressions.map((progression) {
+              final color = _exerciseProgressionColor(progression.status);
+
+              final previousText =
+                  progression.previousWeight == null ||
+                      progression.previousReps == null ||
+                      progression.previousUnit == null
+                  ? 'No baseline'
+                  : '${_formatNumber(progression.previousWeight!)} '
+                        '${progression.previousUnit} × '
+                        '${progression.previousReps}';
+
+              final currentText =
+                  '${_formatNumber(progression.currentWeight)} '
+                  '${progression.currentUnit} × '
+                  '${progression.currentReps}';
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              progression.exerciseName,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _exerciseProgressionIcon(progression.status),
+                                color: color,
+                                size: 16,
+                              ),
+
+                              const SizedBox(width: 4),
+
+                              Text(
+                                _exerciseProgressionLabel(progression.status),
+                                style: TextStyle(
+                                  color: color,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildExerciseProgressionValue(
+                              label: 'LAST',
+                              value: previousText,
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          Expanded(
+                            child: _buildExerciseProgressionValue(
+                              label: 'CURRENT',
+                              value: currentText,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      Text(
+                        progression.changeText,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );

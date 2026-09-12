@@ -436,6 +436,225 @@ class _TrainingScreenState extends State<TrainingScreen> {
     );
   }
 
+  double _progressionWeightInKilograms(WorkoutSet set) {
+    if (set.unit == 'kg') {
+      return set.weight;
+    }
+
+    return set.weight / 2.20462;
+  }
+
+  double _progressionSetVolume(WorkoutSet set) {
+    return _progressionWeightInKilograms(set) * set.reps;
+  }
+
+  double _convertProgressionWeight({
+    required double weight,
+    required String fromUnit,
+    required String toUnit,
+  }) {
+    if (fromUnit == toUnit) {
+      return weight;
+    }
+
+    if (fromUnit == 'kg' && toUnit == 'lb') {
+      return weight * 2.20462;
+    }
+
+    return weight / 2.20462;
+  }
+
+  WorkoutSet _getProgressionBestSet(List<WorkoutSet> sets) {
+    WorkoutSet bestSet = sets.first;
+
+    for (final set in sets.skip(1)) {
+      final setVolume = _progressionSetVolume(set);
+      final bestVolume = _progressionSetVolume(bestSet);
+
+      final volumeDifference = setVolume - bestVolume;
+
+      if (volumeDifference > 0.0001 ||
+          (volumeDifference.abs() <= 0.0001 &&
+              _progressionWeightInKilograms(set) >
+                  _progressionWeightInKilograms(bestSet))) {
+        bestSet = set;
+      }
+    }
+
+    return bestSet;
+  }
+
+  List<WorkoutSet> _getPreviousExerciseSetsForProgression({
+    required String exerciseName,
+    required String currentSessionId,
+  }) {
+    final previousSets =
+        WorkoutStorageService.getAllSets()
+            .where(
+              (set) =>
+                  set.exerciseName == exerciseName &&
+                  set.sessionId != currentSessionId,
+            )
+            .toList()
+          ..sort(
+            (first, second) => first.completedAt.compareTo(second.completedAt),
+          );
+
+    if (previousSets.isEmpty) {
+      return [];
+    }
+
+    final latestPreviousSet = previousSets.last;
+
+    final previousSessionId = latestPreviousSet.sessionId;
+
+    if (previousSessionId != null) {
+      return previousSets
+          .where((set) => set.sessionId == previousSessionId)
+          .toList();
+    }
+
+    final previousDate = DateTime(
+      latestPreviousSet.completedAt.year,
+      latestPreviousSet.completedAt.month,
+      latestPreviousSet.completedAt.day,
+    );
+
+    return previousSets.where((set) {
+      final setDate = DateTime(
+        set.completedAt.year,
+        set.completedAt.month,
+        set.completedAt.day,
+      );
+
+      return set.sessionId == null &&
+          set.workoutName == latestPreviousSet.workoutName &&
+          setDate == previousDate;
+    }).toList();
+  }
+
+  ExerciseProgressionData _buildExerciseProgression({
+    required String exerciseName,
+    required List<WorkoutSet> currentSets,
+    required String currentSessionId,
+  }) {
+    final currentBest = _getProgressionBestSet(currentSets);
+
+    final previousSets = _getPreviousExerciseSetsForProgression(
+      exerciseName: exerciseName,
+      currentSessionId: currentSessionId,
+    );
+
+    if (previousSets.isEmpty) {
+      return ExerciseProgressionData(
+        exerciseName: exerciseName,
+        currentWeight: currentBest.weight,
+        currentReps: currentBest.reps,
+        currentUnit: currentBest.unit,
+        status: ExerciseProgressionStatus.baseline,
+        changeText: 'First recorded performance.',
+      );
+    }
+
+    final previousBest = _getProgressionBestSet(previousSets);
+
+    final currentWeightKg = _progressionWeightInKilograms(currentBest);
+
+    final previousWeightKg = _progressionWeightInKilograms(previousBest);
+
+    final currentVolume = _progressionSetVolume(currentBest);
+
+    final previousVolume = _progressionSetVolume(previousBest);
+
+    final weightDifferenceKg = currentWeightKg - previousWeightKg;
+
+    final sameLoad = weightDifferenceKg.abs() <= 0.01;
+
+    final volumeChangePercent = previousVolume == 0
+        ? 0.0
+        : ((currentVolume - previousVolume) / previousVolume) * 100;
+
+    final previousWeightInCurrentUnit = _convertProgressionWeight(
+      weight: previousBest.weight,
+      fromUnit: previousBest.unit,
+      toUnit: currentBest.unit,
+    );
+
+    final loadDifference = currentBest.weight - previousWeightInCurrentUnit;
+
+    ExerciseProgressionStatus status;
+    String changeText;
+
+    if (weightDifferenceKg > 0.01) {
+      status = ExerciseProgressionStatus.progressed;
+
+      changeText =
+          '+${_formatNumber(loadDifference)} '
+          '${currentBest.unit} load';
+    } else if (sameLoad && currentBest.reps > previousBest.reps) {
+      final repDifference = currentBest.reps - previousBest.reps;
+
+      status = ExerciseProgressionStatus.progressed;
+
+      changeText = repDifference == 1
+          ? '+1 rep at the same load'
+          : '+$repDifference reps at the same load';
+    } else if (currentVolume > previousVolume + 0.0001) {
+      status = ExerciseProgressionStatus.progressed;
+
+      changeText =
+          '+${volumeChangePercent.toStringAsFixed(1)}% '
+          'best-set volume';
+    } else if (volumeChangePercent.abs() <= 5) {
+      status = ExerciseProgressionStatus.maintained;
+
+      changeText = 'Best-set performance stayed within 5%.';
+    } else {
+      status = ExerciseProgressionStatus.lower;
+
+      changeText =
+          '${volumeChangePercent.toStringAsFixed(1)}% '
+          'best-set volume';
+    }
+
+    return ExerciseProgressionData(
+      exerciseName: exerciseName,
+      currentWeight: currentBest.weight,
+      currentReps: currentBest.reps,
+      currentUnit: currentBest.unit,
+      previousWeight: previousBest.weight,
+      previousReps: previousBest.reps,
+      previousUnit: previousBest.unit,
+      status: status,
+      changeText: changeText,
+    );
+  }
+
+  List<ExerciseProgressionData> _buildExerciseProgressions({
+    required List<WorkoutSet> currentSets,
+    required String currentSessionId,
+  }) {
+    final exerciseNames = <String>[];
+
+    for (final set in currentSets) {
+      if (!exerciseNames.contains(set.exerciseName)) {
+        exerciseNames.add(set.exerciseName);
+      }
+    }
+
+    return exerciseNames.map((exerciseName) {
+      final exerciseSets = currentSets
+          .where((set) => set.exerciseName == exerciseName)
+          .toList();
+
+      return _buildExerciseProgression(
+        exerciseName: exerciseName,
+        currentSets: exerciseSets,
+        currentSessionId: currentSessionId,
+      );
+    }).toList();
+  }
+
   String _formatTime(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
@@ -514,6 +733,11 @@ class _TrainingScreenState extends State<TrainingScreen> {
       currentSets: sessionSets,
     );
 
+    final exerciseProgressions = _buildExerciseProgressions(
+      currentSets: sessionSets,
+      currentSessionId: activeWorkout.sessionId,
+    );
+
     final completionData = WorkoutCompletionData(
       workoutName: activeWorkout.name,
       duration: DateTime.now().difference(activeWorkout.startedAt),
@@ -532,6 +756,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
           )
           .toList(),
       comparison: comparison,
+      exerciseProgressions: exerciseProgressions,
       recovery: recovery,
     );
 
