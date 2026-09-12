@@ -304,6 +304,10 @@ class ExerciseProgressScreen extends StatelessWidget {
 
         const SizedBox(height: 16),
 
+        _buildPerformanceTrend(sessions),
+
+        const SizedBox(height: 16),
+
         _buildRecentPerformance(
           recentSessions: recentSessions,
           totalSessions: sessions.length,
@@ -520,6 +524,180 @@ class ExerciseProgressScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildPerformanceTrend(List<_ExerciseSessionSnapshot> sessions) {
+    if (sessions.length < 2) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'PERFORMANCE TREND',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+              ),
+            ),
+
+            SizedBox(height: 12),
+
+            Text(
+              'More sessions are needed to generate a performance trend.',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final chartSessions = sessions.length > 10
+        ? sessions.sublist(sessions.length - 10)
+        : sessions;
+
+    final values = chartSessions
+        .map((session) => _normalizedSetVolume(session.bestSet))
+        .toList();
+
+    final firstValue = values.first;
+    final latestValue = values.last;
+
+    final trendChange = _percentChange(latestValue, firstValue);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'PERFORMANCE TREND',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Best-set volume',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+
+              Text(
+                _formatPercent(trendChange),
+                style: TextStyle(
+                  color: _trendColor(trendChange),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          SizedBox(
+            height: 180,
+            width: double.infinity,
+            child: CustomPaint(
+              painter: _ExerciseTrendPainter(
+                values: values,
+                lineColor: AppColors.primary,
+                gridColor: AppColors.textSecondary.withValues(alpha: 0.12),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _formatShortDate(chartSessions.first.date),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+
+              Text(
+                sessions.length > 10
+                    ? 'Latest 10 sessions'
+                    : '${chartSessions.length} sessions',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 9,
+                ),
+              ),
+
+              Expanded(
+                child: Text(
+                  _formatShortDate(chartSessions.last.date),
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          Text(
+            trendChange > 5
+                ? 'Best-set performance has improved '
+                      '${trendChange.toStringAsFixed(1)}% '
+                      'across this trend.'
+                : trendChange < -5
+                ? 'Best-set performance is '
+                      '${trendChange.abs().toStringAsFixed(1)}% '
+                      'below the start of this trend.'
+                : 'Best-set performance has remained relatively stable.',
+            style: TextStyle(
+              color: _trendColor(trendChange),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRecentPerformance({
     required List<_ExerciseSessionSnapshot> recentSessions,
     required int totalSessions,
@@ -672,4 +850,152 @@ class _ExerciseSessionSnapshot {
   final String workoutName;
   final int setCount;
   final WorkoutSet bestSet;
+}
+
+class _ExerciseTrendPainter extends CustomPainter {
+  const _ExerciseTrendPainter({
+    required this.values,
+    required this.lineColor,
+    required this.gridColor,
+  });
+
+  final List<double> values;
+  final Color lineColor;
+  final Color gridColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.isEmpty) {
+      return;
+    }
+
+    const horizontalPadding = 10.0;
+    const verticalPadding = 12.0;
+
+    final chartWidth = size.width - horizontalPadding * 2;
+
+    final chartHeight = size.height - verticalPadding * 2;
+
+    double minValue = values.first;
+    double maxValue = values.first;
+
+    for (final value in values.skip(1)) {
+      if (value < minValue) {
+        minValue = value;
+      }
+
+      if (value > maxValue) {
+        maxValue = value;
+      }
+    }
+
+    var range = maxValue - minValue;
+
+    if (range.abs() < 0.0001) {
+      range = maxValue.abs() > 0.0001 ? maxValue.abs() * 0.10 : 1;
+    }
+
+    final chartMin = minValue - range * 0.12;
+
+    final chartMax = maxValue + range * 0.12;
+
+    final chartRange = chartMax - chartMin;
+
+    final gridPaint = Paint()
+      ..color = gridColor
+      ..strokeWidth = 1;
+
+    for (var index = 0; index < 4; index++) {
+      final y = verticalPadding + chartHeight * (index / 3);
+
+      canvas.drawLine(
+        Offset(horizontalPadding, y),
+        Offset(size.width - horizontalPadding, y),
+        gridPaint,
+      );
+    }
+
+    final linePaint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final fillPaint = Paint()
+      ..color = lineColor.withValues(alpha: 0.08)
+      ..style = PaintingStyle.fill;
+
+    final pointFillPaint = Paint()
+      ..color = lineColor
+      ..style = PaintingStyle.fill;
+
+    final pointBorderPaint = Paint()
+      ..color = lineColor.withValues(alpha: 0.28)
+      ..strokeWidth = 5
+      ..style = PaintingStyle.stroke;
+
+    final points = <Offset>[];
+
+    for (var index = 0; index < values.length; index++) {
+      final x = values.length == 1
+          ? size.width / 2
+          : horizontalPadding + chartWidth * (index / (values.length - 1));
+
+      final normalized = (values[index] - chartMin) / chartRange;
+
+      final y = verticalPadding + chartHeight * (1 - normalized);
+
+      points.add(Offset(x, y));
+    }
+
+    if (points.length > 1) {
+      final linePath = Path()..moveTo(points.first.dx, points.first.dy);
+
+      for (final point in points.skip(1)) {
+        linePath.lineTo(point.dx, point.dy);
+      }
+
+      canvas.drawPath(linePath, linePaint);
+
+      final fillPath = Path()
+        ..moveTo(points.first.dx, size.height - verticalPadding)
+        ..lineTo(points.first.dx, points.first.dy);
+
+      for (final point in points.skip(1)) {
+        fillPath.lineTo(point.dx, point.dy);
+      }
+
+      fillPath
+        ..lineTo(points.last.dx, size.height - verticalPadding)
+        ..close();
+
+      canvas.drawPath(fillPath, fillPaint);
+
+      canvas.drawPath(linePath, linePaint);
+    }
+
+    for (final point in points) {
+      canvas.drawCircle(point, 6, pointBorderPaint);
+
+      canvas.drawCircle(point, 4, pointFillPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ExerciseTrendPainter oldDelegate) {
+    if (oldDelegate.lineColor != lineColor ||
+        oldDelegate.gridColor != gridColor ||
+        oldDelegate.values.length != values.length) {
+      return true;
+    }
+
+    for (var index = 0; index < values.length; index++) {
+      if (oldDelegate.values[index] != values[index]) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }
