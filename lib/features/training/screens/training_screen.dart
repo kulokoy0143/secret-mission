@@ -585,13 +585,19 @@ class _TrainingScreenState extends State<TrainingScreen> {
     ExerciseProgressionStatus status;
     String changeText;
 
-    if (weightDifferenceKg > 0.01) {
-      status = ExerciseProgressionStatus.progressed;
+    final meaningfulVolumeIncrease = volumeChangePercent > 5;
 
-      changeText =
-          '+${_formatNumber(loadDifference)} '
-          '${currentBest.unit} load';
-    } else if (sameLoad && currentBest.reps > previousBest.reps) {
+    final meaningfulVolumeDecrease = volumeChangePercent < -5;
+
+    final heavierLoad = weightDifferenceKg > 0.01;
+
+    final lighterLoad = weightDifferenceKg < -0.01;
+
+    final moreReps = currentBest.reps > previousBest.reps;
+
+    final fewerReps = currentBest.reps < previousBest.reps;
+
+    if (sameLoad && moreReps) {
       final repDifference = currentBest.reps - previousBest.reps;
 
       status = ExerciseProgressionStatus.progressed;
@@ -599,16 +605,28 @@ class _TrainingScreenState extends State<TrainingScreen> {
       changeText = repDifference == 1
           ? '+1 rep at the same load'
           : '+$repDifference reps at the same load';
-    } else if (currentVolume > previousVolume + 0.0001) {
+    } else if (heavierLoad && !meaningfulVolumeDecrease) {
+      status = ExerciseProgressionStatus.progressed;
+
+      changeText =
+          '+${_formatNumber(loadDifference)} '
+          '${currentBest.unit} load while maintaining performance';
+    } else if (meaningfulVolumeIncrease) {
       status = ExerciseProgressionStatus.progressed;
 
       changeText =
           '+${volumeChangePercent.toStringAsFixed(1)}% '
           'best-set volume';
-    } else if (volumeChangePercent.abs() <= 5) {
+    } else if (!meaningfulVolumeDecrease) {
       status = ExerciseProgressionStatus.maintained;
 
-      changeText = 'Best-set performance stayed within 5%.';
+      if (heavierLoad && fewerReps) {
+        changeText = 'Heavier load with comparable overall performance.';
+      } else if (lighterLoad && moreReps) {
+        changeText = 'More reps with comparable overall performance.';
+      } else {
+        changeText = 'Best-set performance stayed within 5%.';
+      }
     } else {
       status = ExerciseProgressionStatus.lower;
 
